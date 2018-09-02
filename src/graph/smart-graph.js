@@ -146,7 +146,7 @@ export default class SmartGraph {
     this.linksLayer.exit().remove();
     this.linksLayer = this.linksLayer.enter().append('path').attr('id', function (d) {
       return `${d[0]}-${d[1]}`
-    }).attr('class', 'link').attr('stroke', '#000').attr('fill', 'transparent').attr('stroke-width', 1).merge(this.linksLayer);
+    }).attr('class', 'link').attr('stroke', '#808080').attr('fill', 'transparent').attr('stroke-width', 1).merge(this.linksLayer);
     this.restartSimulation();
   }
 
