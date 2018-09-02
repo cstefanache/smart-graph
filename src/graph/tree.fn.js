@@ -12,7 +12,6 @@ class Grid {
   }
 
   setNodes(nodes, conf) {
-    console.log(conf);
     const {layout, tree} = conf, {numCols, numRows} = layout,
       rows = [],
       cols = [];

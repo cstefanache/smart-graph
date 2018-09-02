@@ -33,7 +33,7 @@ export default class SmartGraph {
     this.treeFn = treeFn(config);
 
     if (config.locationFn === 'iso') {
-      this.config.locationFn = Utils.iso;
+      this.config.locationFn = Utils.revIso;
     }
 
     let parent = select(svgRoot);

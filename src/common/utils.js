@@ -1,12 +1,50 @@
+import {rgb} from 'd3-color';
+
 function iso(px, py, pz = 0) {
   const x = Math.round((-Math.sqrt(3) / 2 * py + Math.sqrt(3) / 2 * px) * 100) / 100,
     y = Math.round((+ 0.5 * py + 0.5 * px - pz) * 100) / 100;
   return [x, y];
 }
 
+function revIso(px, py, pz = 0) {
+  // const x = Math.round((-Math.sqrt(3) / 2 * px + Math.sqrt(3) / 2 * py) * 100) / 100,
+  //   y = Math.round((+ 0.5 * px + 0.5 * py - pz) * 100) / 100;
+  // return [x, y];
+  return iso(py, -px, pz);
+}
+
 function isoArr(arr) {
   const [px, py, pz] = arr;
   return iso(px, py, pz);
+}
+
+function generatePath(pointsArr) {
+  return `M${pointsArr.map(p => p.join(' ')).join('L')}z`;
+}
+
+function generatePoints(d) {
+  return d.reduce((memo, item) => `${memo}${item[0]}, ${item[1]} `, '');
+}
+
+function isoColor(r, g, b, a) {
+  const col = {
+    shadow: a !== 1
+      ? 'rgba(0,0,0,0)'
+      : 'rgba(0,0,0,.2)',
+    face_left: rgb(r, g, b).darker(0.5),
+    face_right: rgb(r, g, b).darker(0.7),
+    face_top: rgb(r, g, b),
+    outline: rgb(r, g, b).darker(0.9),
+    inline: rgb(r, g, b).darker(-0.6)
+  };
+
+  if (a !== 1) {
+    col.face_top.opacity = a;
+    col.face_left.opacity = a;
+    col.face_right.opacity = a;
+  }
+
+  return col;
 }
 
 function debounce(func, wait = 300, immediate = false, maxTicks = -1) {
@@ -32,4 +70,12 @@ function debounce(func, wait = 300, immediate = false, maxTicks = -1) {
   };
 }
 
-export default {debounce, iso, isoArr}
+export default {
+  debounce,
+  iso,
+  isoArr,
+  generatePath,
+  generatePoints,
+  isoColor,
+  revIso
+}
