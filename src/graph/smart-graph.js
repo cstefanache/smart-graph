@@ -19,7 +19,20 @@ const DEFAULTS = {
   processors: [
     'nodesMapper', 'processGraph'
   ],
-  layers: [panZoom]
+  layers: [panZoom],
+  getAnchor: (node, out) => {
+    const {width, length} = node.__sg;
+    return [
+      node.x + width / 2,
+      node.y + (
+        out
+        ? length
+        : 0),
+      0,
+      0
+    ];
+
+  }
 }
 
 export default class SmartGraph {
@@ -73,9 +86,15 @@ export default class SmartGraph {
             if (!toNode) {
               return 'M0,0';
             }
-            const [fx, fy] = this.config.locationFn(fromNode.x, fromNode.y, fromNode.z);
-            const [tx, ty] = this.config.locationFn(toNode.x, toNode.y, toNode.z);
-            return `M${fx},${fy}  ${tx},${ty}`;
+            // const [fx, fy] = this.config.locationFn(fromNode.x, fromNode.y, fromNode.z);
+            // const [tx, ty] = this.config.locationFn(toNode.x, toNode.y, toNode.z);
+            const [fromX, fromY, fromZ] = this.config.getAnchor(fromNode, true);
+            const [toX, toY, toZ] = this.config.getAnchor(toNode, false);
+            const [fx, fy] = this.config.locationFn(fromX, fromY, fromZ);
+            const [cfx, cfy] = this.config.locationFn(fromX, fromY + 30, fromZ);
+            const [tx, ty] = this.config.locationFn(toX, toY, toZ);
+            const [ctx, cty] = this.config.locationFn(toX, toY - 30, toZ);
+            return `M${fx},${fy} C${cfx},${cfy} ${ctx},${cty}  ${tx},${ty}`;
 
           });
         });

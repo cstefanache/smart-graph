@@ -7,9 +7,6 @@ function iso(px, py, pz = 0) {
 }
 
 function revIso(px, py, pz = 0) {
-  // const x = Math.round((-Math.sqrt(3) / 2 * px + Math.sqrt(3) / 2 * py) * 100) / 100,
-  //   y = Math.round((+ 0.5 * px + 0.5 * py - pz) * 100) / 100;
-  // return [x, y];
   return iso(py, -px, pz);
 }
 
