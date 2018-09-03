@@ -8,14 +8,12 @@ export default function (instance) {
   };
 
   nodes.forEach(node => {
-
-    const [width, length] = instance.config.getSize();
+    node.forceRender = true;
 
     node.__sg = {
       ...node.__sg,
-      width,
-      length,
-      row: 0
+      row: 0,
+      children: []
     };
   });
 
@@ -24,6 +22,7 @@ export default function (instance) {
       const [from, to] = links[j];
       const fromNode = nodesMap[from],
         toNode = nodesMap[to];
+      fromNode.__sg.children.push(toNode);
       toNode.__sg.row = fromNode.__sg.row + 1;
     }
   }

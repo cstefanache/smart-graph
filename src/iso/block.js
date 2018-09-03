@@ -108,27 +108,32 @@ export default class Block extends D3Element {
 
       const {r, g, b, a} = this;
       const color = Util.isoColor(r, g, b, a)
-        const iso = this.getFaces(),
-          execute = () => {
-            Object.keys(iso).forEach(key => {
+      console.log(color);
+      const iso = this.getFaces(),
+        execute = () => {
+          Object.keys(iso).forEach(key => {
+            if (key !== 'outline' && key !== 'inline') {
               this.poly[key].attr('fill', color[key]);
-              this.transition(this.poly[key], duration, {
-                'points': Util.generatePoints(iso[key])
-              });
+            } else {
+              this.poly[key].attr('fill', 'rgba(0,0,0,0)');
+            }
+            this.transition(this.poly[key], duration, {
+              'points': Util.generatePoints(iso[key])
             });
-          };
+          });
+        };
 
-        if (delay !== 0) {
-          setTimeout(execute, delay);
-        } else {
-          execute();
-        }
+      if (delay !== 0) {
+        setTimeout(execute, delay);
+      } else {
+        execute();
+      }
 
-        setTimeout(() => {
-          resolve(this)
-        }, duration + delay);
-      });
-
-    }
+      setTimeout(() => {
+        resolve(this)
+      }, duration + delay);
+    });
 
   }
+
+}

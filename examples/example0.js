@@ -1,7 +1,5 @@
 import {Block, SmartGraph} from '../src';
 
-import props from './data/example2.data.json';
-
 const svg = document.querySelector('#svg');
 
 const config = {
@@ -9,10 +7,10 @@ const config = {
     let root = new Block(svgRoot);
     root.build({
       x: 0,
-      y: -20,
+      y: -90,
       z: 0,
       width: 20,
-      length: 20,
+      length: 90,
       height: 4,
       radius: 20,
       a: 0.9,
@@ -21,17 +19,27 @@ const config = {
       b: node.b || 155
     });
 
-    return root;
   },
   locationFn: 'iso',
-  getSize: node => node.isCollapsed
-    ? [810, 20, 4]
-    : [20, 190, 4],
-  id: 'oid'
+  getSize: node => [
+    90, 20, 5
+  ],
+  id: 'id'
 }
 
 export default() => {
+
+  const nodes = [
+      {
+        id: 1
+      }, {
+        id: 2
+      }, {
+        id: 3
+      }
+    ],
+    links = [[1, 2], [1, 3]];
+
   const graph = new SmartGraph(svg, config);
-  graph.setData(props);
-  graph.zoomToExtent(0.8, 300, 500)
+  graph.setData({nodes, links});
 }

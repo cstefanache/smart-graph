@@ -12,7 +12,7 @@ class Grid {
   }
 
   setNodes(nodes, conf) {
-    const {layout, tree} = conf, {numCols, numRows} = layout,
+    const {layout, tree, config} = conf, {getSize} = config, {numCols, numRows} = layout,
       rows = [],
       cols = [];
 
@@ -26,9 +26,12 @@ class Grid {
     Object.keys(tree).forEach((row, rowIndex) => {
       const {children} = tree[row];
       children.forEach((node, index) => {
-        const {__sg} = node, {width, length} = __sg
+        const {__sg} = node,
+          [width, length, height] = getSize(node)
         rows[row].width = Math.max(rows[row].width, length);
         cols[index].width = Math.max(cols[index].width, width);
+
+        Object.assign(__sg, {width, length, height});
         node.__sg = {
           ...node.__sg,
           gridRow: rows[rowIndex],
@@ -57,10 +60,11 @@ export default function (instance) {
   let nodes,
     links,
     grid = new Grid(instance);
-
+  const {getSize} = instance;
   function force(_) {
     nodes.forEach(node => {
-      const {__sg} = node, {gridColumn, gridRow, width, length} = __sg;
+      const {__sg} = node, {gridColumn, gridRow} = __sg;
+      const [width, length, height] = getSize(node);
       node.vx = (gridColumn.x - node.x + (gridColumn.width - width) / 2) * (1 - _);
       node.vy = (gridRow.y - node.y + (gridRow.width - length)) * (1 - _);
     })

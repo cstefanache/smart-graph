@@ -1,6 +1,7 @@
 import {forceCenter, forceLink, forceManyBody, forceSimulation} from 'd3-force';
 
 import Utils from '../common/utils';
+import lo from 'lodash';
 import nodesMapper from './processors/node.mapper';
 import panZoom from './layers/panzoom.layer';
 import processGraph from './processors/tree.builder';
@@ -43,6 +44,7 @@ export default class SmartGraph {
       ...config
     };
 
+    this.collapseData = {};
     this.treeFn = treeFn(config);
 
     if (config.locationFn === 'iso') {
@@ -62,14 +64,8 @@ export default class SmartGraph {
 
       if (!this.simulation) {
         this.simulation = forceSimulation().force('treeFn', this.treeFn).nodes(this.nodes);
-
-        /*
-          .force('link', forceLink().id(d => d.id))
-          .force('charge', forceManyBody()).force('center', forceCenter(300, 300))
-*/
-
         this.simulation.nodes(this.nodes).on('tick', () => {
-          let alpha = this.simulation.alpha();
+          // let alpha = this.simulation.alpha();
           this.nodesLayer.attr('transform', (d, index) => {
             const [x, y] = this.config.locationFn(d.x, d.y, d.z);
             return `translate(${x}, ${y})`;
@@ -104,6 +100,68 @@ export default class SmartGraph {
     }, 150);
   }
 
+  collapse(toRemove) {
+    const {nodes, links, config} = this;
+    const collapseLinks = [];
+
+    toRemove.forEach(node => {
+      collapseLinks.push(this.idFn(node));
+    })
+
+    const n = lo.filter(nodes, nd => toRemove.indexOf(nd) === -1);
+    const l = lo.filter(links, lk => {
+      const [from, to] = lk;
+      return collapseLinks.indexOf(from) === -1 && collapseLinks.indexOf(to) === -1;
+    });
+
+    this.setData({nodes: n, links: l});
+    return [
+      lo.difference(nodes, n),
+      lo.difference(links, l)
+    ];
+  }
+
+  expand(data) {
+    const [eNodes, eLinks] = data;
+    const {nodes, links, config} = this;
+    eNodes.forEach(node => {
+      node.forceRender = true;
+    })
+    this.setData({nodes: nodes.concat(eNodes), links: links.concat(eLinks)});
+
+  }
+
+  toggle(d) {
+    const {config} = this;
+    const toggleId = this.idFn(d);
+    const toggleInfo = this.collapseData[toggleId];
+    if (toggleInfo) {
+      d.__sg.isCollapsed = false;
+      this.expand(toggleInfo);
+      delete this.collapseData[toggleId];
+    } else {
+      d.__sg.isCollapsed = true;
+      const parsed = [];
+      const parseNode = node => {
+        if (parsed.indexOf(node) !== -1) {
+          return [];
+        }
+
+        parsed.push(node);
+        const {__sg} = node, {children} = __sg;
+
+        let result = [...children]
+
+        children.forEach(child => result = result.concat(parseNode(child)));
+
+        return result;
+      }
+
+      this.collapseData[toggleId] = this.collapse(parseNode(d));
+    }
+
+  }
+
   setData(data) {
 
     Object.assign(this, data);
@@ -136,7 +194,9 @@ export default class SmartGraph {
 
     this.nodesLayer.nodes().forEach(function (d, i) {
       const node = nodes[i];
-      node.iso = config.render(select(d), node)
+      if (node.forceRender) {
+        node.iso = config.render(select(d), node)
+      }
     });
 
     this.linksLayer = this.linksLayer.data(links, function (d) {
