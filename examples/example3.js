@@ -8,8 +8,8 @@ const config = {
   render: (svgRoot, node) => {
     let root = new Block(svgRoot);
     root.build({
-      x: 5,
-      y: 5,
+      x: 0,
+      y: -20,
       z: 0,
       width: 20,
       length: 20,
