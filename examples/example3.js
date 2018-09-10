@@ -3,7 +3,7 @@ import {Block, SmartGraph} from '../src';
 import props from './data/example2.data.json';
 
 const svg = document.querySelector('#svg');
-
+let clickFn;
 const config = {
   render: (svgRoot, node) => {
     let root = new Block(svgRoot);
@@ -20,7 +20,10 @@ const config = {
       g: node.g || 155,
       b: node.b || 155
     });
-
+    svgRoot.on('click', d => {
+      console.log(d);
+      clickFn(d);
+    })
     return root;
   },
   locationFn: 'iso',
@@ -33,5 +36,9 @@ const config = {
 export default() => {
   const graph = new SmartGraph(svg, config);
   graph.setData(props);
+  clickFn = d => {
+    console.log(d);
+    graph.toggle(d);
+  }
   graph.zoomToExtent(0.8, 300, 500)
 }

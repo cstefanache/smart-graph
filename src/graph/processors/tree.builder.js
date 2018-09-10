@@ -8,23 +8,25 @@ export default function (instance) {
   };
 
   nodes.forEach(node => {
-    node.forceRender = true;
 
     node.__sg = {
       ...node.__sg,
       row: 0,
-      children: []
+      children: [],
+      toLinks: [],
+      fromLinks: []
     };
   });
 
   for (let i = 0; i < links.length; i++) {
-    for (let j = 0; j < links.length; j++) {
-      const [from, to] = links[j];
-      const fromNode = nodesMap[from],
-        toNode = nodesMap[to];
-      fromNode.__sg.children.push(toNode);
-      toNode.__sg.row = fromNode.__sg.row + 1;
-    }
+    const link = links[i];
+    const [from, to] = link;
+    const fromNode = nodesMap[from],
+      toNode = nodesMap[to];
+    fromNode.__sg.children.push(toNode);
+    fromNode.__sg.toLinks.push(link)
+    toNode.__sg.fromLinks.push(link);
+    toNode.__sg.row = fromNode.__sg.row + 1;
   }
 
   nodes.forEach(node => {

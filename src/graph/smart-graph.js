@@ -1,6 +1,8 @@
 import {forceCenter, forceLink, forceManyBody, forceSimulation} from 'd3-force';
 
 import Utils from '../common/utils';
+import childrenAggregator from './processors/children.aggregator';
+import groupBuilder from './processors/group.builder';
 import lo from 'lodash';
 import nodesMapper from './processors/node.mapper';
 import panZoom from './layers/panzoom.layer';
@@ -10,7 +12,9 @@ import treeFn from './tree.fn';
 
 const processors = {
   nodesMapper,
-  processGraph
+  processGraph,
+  childrenAggregator,
+  groupBuilder
 }
 
 const DEFAULTS = {
@@ -18,7 +22,12 @@ const DEFAULTS = {
     x, y - z
   ],
   processors: [
-    'nodesMapper', 'processGraph'
+    'nodesMapper',
+    'processGraph',
+    'childrenAggregator',
+    'groupBuilder',
+    'nodesMapper',
+    'processGraph'
   ],
   layers: [panZoom],
   getAnchor: (node, out) => {
@@ -44,7 +53,8 @@ export default class SmartGraph {
       ...config
     };
 
-    this.collapseData = {};
+    this.listeners = {};
+
     this.treeFn = treeFn(config);
 
     if (config.locationFn === 'iso') {
@@ -97,69 +107,48 @@ export default class SmartGraph {
       }
 
       this.simulation.alpha(1).restart();
+      const restartFn = this.listeners.restart;
+      if (restartFn) {
+        restartFn();
+      }
     }, 150);
   }
 
-  collapse(toRemove) {
-    const {nodes, links, config} = this;
-    const collapseLinks = [];
-
-    toRemove.forEach(node => {
-      collapseLinks.push(this.idFn(node));
-    })
-
-    const n = lo.filter(nodes, nd => toRemove.indexOf(nd) === -1);
-    const l = lo.filter(links, lk => {
-      const [from, to] = lk;
-      return collapseLinks.indexOf(from) === -1 && collapseLinks.indexOf(to) === -1;
-    });
-
-    this.setData({nodes: n, links: l});
-    return [
-      lo.difference(nodes, n),
-      lo.difference(links, l)
-    ];
+  on(event, fn) {
+    this.listeners[event] = fn;
   }
 
-  expand(data) {
-    const [eNodes, eLinks] = data;
-    const {nodes, links, config} = this;
-    eNodes.forEach(node => {
-      node.forceRender = true;
-    })
-    this.setData({nodes: nodes.concat(eNodes), links: links.concat(eLinks)});
-
-  }
-
-  toggle(d) {
-    const {config} = this;
-    const toggleId = this.idFn(d);
-    const toggleInfo = this.collapseData[toggleId];
-    if (toggleInfo) {
-      d.__sg.isCollapsed = false;
-      this.expand(toggleInfo);
-      delete this.collapseData[toggleId];
-    } else {
-      d.__sg.isCollapsed = true;
-      const parsed = [];
-      const parseNode = node => {
-        if (parsed.indexOf(node) !== -1) {
-          return [];
+  toggle(node) {
+    const {__sg} = node;
+    const {collapsed, children, fromLinks} = __sg;
+    const nodesList = [];
+    let linksList = [];
+    const parseChildren = childsList => {
+      childsList.forEach(nd => {
+        if (nodesList.indexOf(nd) === -1) {
+          nodesList.push(nd);
+          if (!collapsed) {
+            nd.__sg.blockRender = false;
+          }
+          linksList = linksList.concat(nd.__sg.fromLinks);
+          parseChildren(nd.__sg.children);
         }
+      })
+    };
 
-        parsed.push(node);
-        const {__sg} = node, {children} = __sg;
+    parseChildren(children);
 
-        let result = [...children]
-
-        children.forEach(child => result = result.concat(parseNode(child)));
-
-        return result;
-      }
-
-      this.collapseData[toggleId] = this.collapse(parseNode(d));
+    if (!collapsed) {
+      node.__sg.collapsed = true;
+      this.nodes = lo.difference(this.nodes, nodesList);
+      this.links = lo.difference(this.links, linksList);
+    } else {
+      node.__sg.collapsed = false;
+      this.nodes = this.nodes.concat(nodesList);
+      this.links = this.links.concat(linksList);
     }
 
+    this.restart();
   }
 
   setData(data) {
@@ -194,8 +183,9 @@ export default class SmartGraph {
 
     this.nodesLayer.nodes().forEach(function (d, i) {
       const node = nodes[i];
-      if (node.forceRender) {
-        node.iso = config.render(select(d), node)
+      if (!node.__sg.blockRender) {
+        node.iso = config.render(select(d), node);
+        node.__sg.blockRender = true;
       }
     });
 
