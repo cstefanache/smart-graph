@@ -18,15 +18,17 @@ export default function (instance) {
     };
   });
 
-  for (let i = 0; i < links.length; i++) {
-    const link = links[i];
-    const [from, to] = link;
-    const fromNode = nodesMap[from],
-      toNode = nodesMap[to];
-    fromNode.__sg.children.push(toNode);
-    fromNode.__sg.toLinks.push(link)
-    toNode.__sg.fromLinks.push(link);
-    toNode.__sg.row = fromNode.__sg.row + 1;
+  for (let j = 0; j < links.length; j++) {
+    for (let i = 0; i < links.length; i++) {
+      const link = links[i];
+      const [from, to] = link;
+      const fromNode = nodesMap[from],
+        toNode = nodesMap[to];
+      fromNode.__sg.children.push(toNode);
+      fromNode.__sg.toLinks.push(link)
+      toNode.__sg.fromLinks.push(link);
+      toNode.__sg.row = fromNode.__sg.row + 1;
+    }
   }
 
   nodes.forEach(node => {

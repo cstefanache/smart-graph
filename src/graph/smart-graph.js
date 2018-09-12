@@ -22,12 +22,11 @@ const DEFAULTS = {
     x, y - z
   ],
   processors: [
-    'nodesMapper',
-    'processGraph',
-    'childrenAggregator',
-    'groupBuilder',
-    'nodesMapper',
-    'processGraph'
+    'nodesMapper', 'processGraph'
+    // 'childrenAggregator'
+    // 'groupBuilder',
+    // 'nodesMapper',
+    // 'processGraph'
   ],
   layers: [panZoom],
   getAnchor: (node, out) => {
@@ -120,34 +119,41 @@ export default class SmartGraph {
 
   toggle(node) {
     const {__sg} = node;
-    const {collapsed, children, fromLinks} = __sg;
+    const {children, collapsedChildren} = __sg;
     const nodesList = [];
     let linksList = [];
     const parseChildren = childsList => {
       childsList.forEach(nd => {
         if (nodesList.indexOf(nd) === -1) {
           nodesList.push(nd);
-          if (!collapsed) {
+          if (!collapsedChildren) {
             nd.__sg.blockRender = false;
           }
-          linksList = linksList.concat(nd.__sg.fromLinks);
+          // linksList = linksList.concat(nd.__sg.fromLinks);
+          nd.__sg.fromLinks.forEach(link => {
+            if (linksList.indexOf(link) === -1) {
+              linksList.push(link);
+            }
+          });
+
           parseChildren(nd.__sg.children);
         }
       })
     };
 
-    parseChildren(children);
-
-    if (!collapsed) {
-      node.__sg.collapsed = true;
+    if (!collapsedChildren) {
+      parseChildren(children);
+      node.__sg.collapsedChildren = nodesList;
       this.nodes = lo.difference(this.nodes, nodesList);
       this.links = lo.difference(this.links, linksList);
     } else {
-      node.__sg.collapsed = false;
+      parseChildren(collapsedChildren);
+      delete node.__sg.collapsedChildren;
       this.nodes = this.nodes.concat(nodesList);
       this.links = this.links.concat(linksList);
     }
 
+    // this.runPlugins();
     this.restart();
   }
 
@@ -161,6 +167,11 @@ export default class SmartGraph {
       ? id
       : node => node[id];
 
+    this.runPlugins();
+    this.restart();
+  }
+
+  runPlugins() {
     this.config.processors.forEach(processorName => {
       const processor = processors[processorName];
       if (processor) {
@@ -170,7 +181,6 @@ export default class SmartGraph {
       }
     });
 
-    this.restart();
   }
 
   restart() {
@@ -188,7 +198,6 @@ export default class SmartGraph {
         node.__sg.blockRender = true;
       }
     });
-
     this.linksLayer = this.linksLayer.data(links, function (d) {
       return `${d[0]}-${d[1]}`
     });
@@ -197,6 +206,7 @@ export default class SmartGraph {
     this.linksLayer = this.linksLayer.enter().append('path').attr('id', function (d) {
       return `${d[0]}-${d[1]}`
     }).attr('class', 'link').attr('stroke', '#808080').attr('fill', 'transparent').attr('stroke-width', 1).merge(this.linksLayer);
+
     this.restartSimulation();
   }
 

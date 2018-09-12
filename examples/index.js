@@ -6,8 +6,8 @@ import example3IQRun from './example3.iq';
 import example3Run from './example3';
 import example4Run from './example4';
 
-// example2Run();
-example3Run();
+example2Run();
+// example3Run();
 // example3IQRun();
 // example3IQRun();
 // example3IQFlatRun();

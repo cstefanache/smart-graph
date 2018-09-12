@@ -20,9 +20,5 @@ export default() => {
     graph.toggle(d);
   }
   graph.setData(props);
-  graph.on('restart', () => {
-    setTimeout(() => {
-      graph.zoomToExtent(0.8);
-    }, 1200);
-  });
+  graph.zoomToExtent(0.8, 300, 500);
 }
