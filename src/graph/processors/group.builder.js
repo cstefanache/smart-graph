@@ -15,13 +15,16 @@ const DEFAULTS = {
   skipProps: ['__sg', 'forceRender']
 }
 
+let executed = false;
+
 export default function (instance) {
-  console.log(instance);
   const {nodes, links, tree, config, idFn} = instance;
   const {groupBuilder} = config;
-  if (!groupBuilder || !groupBuilder.active) {
+  if (executed || !groupBuilder || !groupBuilder.active) {
     return {nodes, links};
   }
+
+  executed = true;
 
   const cfg = {
     ...DEFAULTS,
@@ -78,7 +81,6 @@ export default function (instance) {
     Object.keys(processData).forEach(dataKey => {
       const objKeys = Object.keys(processData[dataKey]);
       const num = objKeys.length;
-
       if (num === 1 || nextLayer.children.length * cfg.groupThreshold < num) {
         delete processData[dataKey];
       } else {
@@ -97,7 +99,6 @@ export default function (instance) {
 
     const res = result[0];
     const {dataKey, median, num} = res;
-    console.log(processData[dataKey]);
 
     const brake = {};
     Object.keys(processData[dataKey]).forEach(key => {

@@ -30,6 +30,10 @@ const config = {
   getSize: node => [
     20, 20, 4
   ],
+  groupBuilder: {
+    active: true,
+    skipProps: ['oid']
+  },
   id: 'oid'
 }
 
@@ -38,7 +42,7 @@ export default() => {
   graph.setData(props);
   clickFn = d => {
     console.log(d);
-    graph.toggle(d);
+    graph.toggle(d, false);
   }
   graph.zoomToExtent(0.8, 300, 500)
 }

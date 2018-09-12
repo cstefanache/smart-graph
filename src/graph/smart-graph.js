@@ -1,3 +1,10 @@
+/* eslint no-extend-native: 0 */
+Array.prototype.pushUnique = function (item) {
+  if (this.indexOf(item) === -1) {
+    this.push(item);
+  }
+}
+
 import {forceCenter, forceLink, forceManyBody, forceSimulation} from 'd3-force';
 
 import Utils from '../common/utils';
@@ -9,12 +16,15 @@ import panZoom from './layers/panzoom.layer';
 import processGraph from './processors/tree.builder';
 import {select} from 'd3-selection';
 import treeFn from './tree.fn';
+import treeOrder from './processors/tree.order';
+import uuid from 'uuid4';
 
 const processors = {
   nodesMapper,
   processGraph,
   childrenAggregator,
-  groupBuilder
+  groupBuilder,
+  treeOrder
 }
 
 const DEFAULTS = {
@@ -22,11 +32,13 @@ const DEFAULTS = {
     x, y - z
   ],
   processors: [
-    'nodesMapper', 'processGraph'
-    // 'childrenAggregator'
-    // 'groupBuilder',
-    // 'nodesMapper',
-    // 'processGraph'
+    'nodesMapper',
+    'processGraph',
+    'childrenAggregator',
+    'groupBuilder',
+    'nodesMapper',
+    'processGraph',
+    'treeOrder'
   ],
   layers: [panZoom],
   getAnchor: (node, out) => {
@@ -51,6 +63,38 @@ export default class SmartGraph {
       ...DEFAULTS,
       ...config
     };
+
+    const {id} = this.config;
+
+    if (!id) {
+      throw new Error('missing id property [fn/string]');
+    }
+
+    const isFunction = typeof id === 'function';
+    this.idFn = isFunction
+      ? id
+      : node => node[id];
+
+    this.getNode = props => {
+      const node = {
+        sgGroup: true,
+        ...props,
+        x: 0,
+        y: 0,
+        vx: 0,
+        vy: 0
+      };
+
+      const uid = uuid();
+      if (isFunction) {
+        node.id = function () {
+          return uid
+        };
+      } else {
+        node[id] = uid
+      }
+      return node;
+    }
 
     this.listeners = {};
 
@@ -77,6 +121,9 @@ export default class SmartGraph {
           // let alpha = this.simulation.alpha();
           this.nodesLayer.attr('transform', (d, index) => {
             const [x, y] = this.config.locationFn(d.x, d.y, d.z);
+            if (isNaN(x)) {
+              return `translate(0, 0)`;
+            }
             return `translate(${x}, ${y})`;
           });
           this.linksLayer.attr('d', d => {
@@ -117,11 +164,16 @@ export default class SmartGraph {
     this.listeners[event] = fn;
   }
 
-  toggle(node) {
+  toggle(node, collapseAll = true) {
     const {__sg} = node;
     const {children, collapsedChildren} = __sg;
     const nodesList = [];
-    let linksList = [];
+    const linksList = [];
+    const revLinksList = [];
+    const nodeId = this.idFn(node);
+    const newNode = this.getNode();
+    const newNodeId = this.idFn(newNode);
+
     const parseChildren = childsList => {
       childsList.forEach(nd => {
         if (nodesList.indexOf(nd) === -1) {
@@ -129,14 +181,25 @@ export default class SmartGraph {
           if (!collapsedChildren) {
             nd.__sg.blockRender = false;
           }
-          // linksList = linksList.concat(nd.__sg.fromLinks);
           nd.__sg.fromLinks.forEach(link => {
-            if (linksList.indexOf(link) === -1) {
-              linksList.push(link);
-            }
+            linksList.pushUnique(link);
           });
 
-          parseChildren(nd.__sg.children);
+          if (collapseAll) {
+            parseChildren(nd.__sg.children);
+          } else {
+            nd.__sg.fromLinks.forEach(link => {
+              linksList.pushUnique(link);
+              revLinksList.pushUnique([link[0], newNodeId]);
+            });
+            nd.__sg.toLinks.forEach(link => {
+              linksList.pushUnique(link);
+              // revLinksList.pushUnique([nodeId, newNodeId]);
+              revLinksList.pushUnique([
+                newNodeId, link[1]
+              ]);
+            });
+          }
         }
       })
     };
@@ -144,28 +207,28 @@ export default class SmartGraph {
     if (!collapsedChildren) {
       parseChildren(children);
       node.__sg.collapsedChildren = nodesList;
+      node.__sg.createdLinks = revLinksList;
+      node.__sg.ghostNode = newNode;
       this.nodes = lo.difference(this.nodes, nodesList);
-      this.links = lo.difference(this.links, linksList);
+      if (!collapseAll) {
+        this.nodes.push(newNode);
+      }
+      this.links = lo.difference(this.links, linksList).concat(revLinksList);
     } else {
       parseChildren(collapsedChildren);
+      this.nodes = lo.without(this.nodes, node.__sg.ghostNode).concat(nodesList);
+      this.links = lo.difference(this.links, node.__sg.createdLinks).concat(linksList);
       delete node.__sg.collapsedChildren;
-      this.nodes = this.nodes.concat(nodesList);
-      this.links = this.links.concat(linksList);
+      delete node.__sg.revLinksList;
     }
 
-    // this.runPlugins();
+    this.runPlugins();
     this.restart();
   }
 
   setData(data) {
 
     Object.assign(this, data);
-
-    const {id} = this.config;
-    const isFunction = typeof id === 'function';
-    this.idFn = isFunction
-      ? id
-      : node => node[id];
 
     this.runPlugins();
     this.restart();
