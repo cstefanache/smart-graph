@@ -17,8 +17,15 @@ const DEFAULTS = {
 
 let executed = false;
 
-export default function (instance) {
-  const {nodes, links, tree, config, idFn} = instance;
+export default function(instance) {
+  const {
+    nodes,
+    links,
+    tree,
+    config,
+    idFn,
+    getNode
+  } = instance;
   const {groupBuilder} = config;
   if (executed || !groupBuilder || !groupBuilder.active) {
     return {nodes, links};
@@ -90,41 +97,85 @@ export default function (instance) {
           // const diff = numChildren - processData[dataKey][key];
           median += n * n / 2;
         });
-        // console.log(`${dataKey}: ${median} ${num}`);
         result.push({dataKey, median, num});
       }
     });
     result = lo.sortBy(result, item => item.median * item.num);
-    // insertLayerFor(processData, result[0]);
 
-    const res = result[0];
-    const {dataKey, median, num} = res;
+    let iter = 0;
+    for (iter; iter < Math.min(result.length, 3); iter++) {
+      const {num} = result[iter];
+    }
 
-    const brake = {};
-    Object.keys(processData[dataKey]).forEach(key => {
-      const {children} = processData[dataKey][key];
-      const id = guid();
-      const node = {
-        [dataKey]: key,
-        [config.id]: id
-      };
+    result.length = iter - 1;
+    const routes = {};
 
-      brake[key] = node[config.id];
-      nodesToAdd.push(node);
+    const getRouteForPath = path => {
+      const nodesPath = [];
+      let routeRef = routes;
+      let parent;
+      path.forEach(pathElem => {
+        const [key, value] = pathElem;
 
-      children.forEach(child => {
+        let reference = routeRef[value];
+        let node;
+        if (!reference) {
+          node = getNode({sgAutoGroup: true, [key]: value});
+          nodesToAdd.push(node);
+
+          if (routeRef !== routes && parent) {
+            const fromId = idFn(parent);
+            const toId = idFn(node);
+            linksToAdd.push([fromId, toId]);
+          }
+
+          routeRef[value] = {
+            node,
+            children: {}
+          };
+          routeRef = routeRef[value].children;
+        } else {
+          routeRef = reference.children;
+          node = reference.node;
+        }
+        parent = node;
+        nodesPath.push(node);
+
+      });
+      return nodesPath;
+    }
+
+    if (result.length > 0) {
+      nextLayer.children.forEach(child => {
+        const path = [];
+        result.forEach(res => {
+          const {dataKey} = res;
+          path.push([
+            dataKey, child[dataKey]
+          ]);
+        });
+
+        const nodesPath = getRouteForPath(path);
         const childId = idFn(child);
         links.forEach(link => {
           const [from, to] = link;
           if (to === childId) {
-            linksToAdd.push([from, id]);
-            linksToAdd.push([id, childId]);
             linksToRemove.push(link);
+            linksToAdd.push([
+              from,
+              idFn(nodesPath[0])
+            ]);
+            linksToAdd.push([
+              idFn(nodesPath[nodesPath.length - 1]),
+              to
+            ]);
           }
         });
       });
-    });
+    }
+
   }
+
 
   return {
     nodes: nodes.concat(nodesToAdd),

@@ -1,17 +1,21 @@
 import lo from 'lodash';
 
-const OFFSET = 20;
-
+const OFFSET = 50;
+const DEFAULTS = {
+  vGutter: OFFSET * 2,
+  hGutter: OFFSET
+}
 class Grid {
 
-  constructor(config = {
-    vGutter: OFFSET * 2,
-    hGutter: OFFSET
-  }) {
-    this.config = config;
+  constructor(config) {
+    this.config = {
+      ...DEFAULTS,
+      ...config
+    };
   }
 
   setNodes(nodes, conf) {
+    console.log(this.config);
     const {layout, tree, config} = conf, {getSize} = config, {numCols, numRows} = layout,
       rows = [],
       cols = [];
@@ -45,18 +49,18 @@ class Grid {
       currentX = 0;
 
     rows.forEach(row => {
-      currentY += row.width + 60;
+      currentY += row.width + this.config.vGutter;
       row.y = currentY;
     });
 
     cols.forEach(col => {
-      currentX += col.width + 30;
+      currentX += col.width + this.config.hGutter;
       col.x = currentX;
     });
   }
 }
 
-export default function (instance) {
+export default function(instance) {
   let nodes,
     links,
     grid = new Grid(instance);
@@ -76,12 +80,12 @@ export default function (instance) {
     })
   }
 
-  force.setNodes = function (n, data) {
+  force.setNodes = function(n, data) {
     nodes = n;
     grid.setNodes(nodes, data);
   }
 
-  force.setLinks = function (l, data) {
+  force.setLinks = function(l, data) {
     links = l;
     grid.setNodes(nodes, data);
   }

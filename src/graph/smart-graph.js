@@ -1,5 +1,5 @@
 /* eslint no-extend-native: 0 */
-Array.prototype.pushUnique = function (item) {
+Array.prototype.pushUnique = function(item) {
   if (this.indexOf(item) === -1) {
     this.push(item);
   }
@@ -17,6 +17,7 @@ import processGraph from './processors/tree.builder';
 import {select} from 'd3-selection';
 import treeFn from './tree.fn';
 import treeOrder from './processors/tree.order';
+import autoCollapse from './processors/auto.collapse';
 import uuid from 'uuid4';
 
 const processors = {
@@ -24,7 +25,8 @@ const processors = {
   processGraph,
   childrenAggregator,
   groupBuilder,
-  treeOrder
+  treeOrder,
+  autoCollapse
 }
 
 const DEFAULTS = {
@@ -36,6 +38,9 @@ const DEFAULTS = {
     'processGraph',
     'childrenAggregator',
     'groupBuilder',
+    'nodesMapper',
+    'processGraph',
+    'autoCollapse',
     'nodesMapper',
     'processGraph',
     'treeOrder'
@@ -77,17 +82,19 @@ export default class SmartGraph {
 
     this.getNode = props => {
       const node = {
-        sgGroup: true,
         ...props,
         x: 0,
         y: 0,
         vx: 0,
-        vy: 0
+        vy: 0,
+        __sg: {
+
+        }
       };
 
       const uid = uuid();
       if (isFunction) {
-        node.id = function () {
+        node.id = function() {
           return uid
         };
       } else {
@@ -164,14 +171,14 @@ export default class SmartGraph {
     this.listeners[event] = fn;
   }
 
-  toggle(node, collapseAll = true) {
+  toggle(node, collapseAll = true, runPlugins = true) {
     const {__sg} = node;
     const {children, collapsedChildren} = __sg;
     const nodesList = [];
     const linksList = [];
     const revLinksList = [];
     const nodeId = this.idFn(node);
-    const newNode = this.getNode();
+    const newNode = this.getNode({sgGroup: true, count: children.length});
     const newNodeId = this.idFn(newNode);
 
     const parseChildren = childsList => {
@@ -222,8 +229,10 @@ export default class SmartGraph {
       delete node.__sg.revLinksList;
     }
 
-    this.runPlugins();
-    this.restart();
+    if (runPlugins) {
+      this.runPlugins();
+      this.restart();
+    }
   }
 
   setData(data) {
@@ -254,19 +263,19 @@ export default class SmartGraph {
     this.nodesLayer.exit().remove();
     this.nodesLayer = this.nodesLayer.enter().append('g').attr('class', 'node').merge(this.nodesLayer);
 
-    this.nodesLayer.nodes().forEach(function (d, i) {
+    this.nodesLayer.nodes().forEach(function(d, i) {
       const node = nodes[i];
       if (!node.__sg.blockRender) {
         node.iso = config.render(select(d), node);
         node.__sg.blockRender = true;
       }
     });
-    this.linksLayer = this.linksLayer.data(links, function (d) {
+    this.linksLayer = this.linksLayer.data(links, function(d) {
       return `${d[0]}-${d[1]}`
     });
 
     this.linksLayer.exit().remove();
-    this.linksLayer = this.linksLayer.enter().append('path').attr('id', function (d) {
+    this.linksLayer = this.linksLayer.enter().append('path').attr('id', function(d) {
       return `${d[0]}-${d[1]}`
     }).attr('class', 'link').attr('stroke', '#808080').attr('fill', 'transparent').attr('stroke-width', 1).merge(this.linksLayer);
 
