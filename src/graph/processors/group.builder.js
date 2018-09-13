@@ -40,6 +40,7 @@ export default function(instance) {
   }
 
   const layerKeys = Object.keys(tree);
+  const alreadyCreated = [];
   let nodesToAdd = [];
   let linksToAdd = [];
   let linksToRemove = [];
@@ -103,11 +104,23 @@ export default function(instance) {
     result = lo.sortBy(result, item => item.median * item.num);
 
     let iter = 0;
-    for (iter; iter < Math.min(result.length, 3); iter++) {
-      const {num} = result[iter];
+    let prevNum = Number.MAX_SAFE_INTEGER;
+    let prevMedian = 0;
+    for (iter; iter < Math.min(result.length, 4); iter++) {
+
+      const {dataKey, num, median} = result[iter];
+      console.log(dataKey, num, prevNum, median, prevMedian);
+
+      if (prevNum <= num && prevMedian >= median ) {
+        break;
+      }
+      prevNum = num;
+      prevMedian = median;
     }
 
-    result.length = iter - 1;
+    console.log('----------------------');
+
+    result.length = iter;
     const routes = {};
 
     const getRouteForPath = path => {
@@ -126,7 +139,11 @@ export default function(instance) {
           if (routeRef !== routes && parent) {
             const fromId = idFn(parent);
             const toId = idFn(node);
-            linksToAdd.push([fromId, toId]);
+            const test = `${fromId}-${toId}`;
+            if (alreadyCreated.indexOf(test) === -1) {
+              linksToAdd.push([fromId, toId]);
+              alreadyCreated.push(test);
+            }
           }
 
           routeRef[value] = {
@@ -161,21 +178,30 @@ export default function(instance) {
           const [from, to] = link;
           if (to === childId) {
             linksToRemove.push(link);
-            linksToAdd.push([
-              from,
-              idFn(nodesPath[0])
-            ]);
-            linksToAdd.push([
-              idFn(nodesPath[nodesPath.length - 1]),
-              to
-            ]);
+            const test1 = `${from}-${idFn(nodesPath[0])}`;
+            const test2 = `${idFn(nodesPath[nodesPath.length - 1])}-${to}`;
+
+            if (alreadyCreated.indexOf(test1) === -1) {
+              linksToAdd.push([
+                from,
+                idFn(nodesPath[0])
+              ]);
+              alreadyCreated.push(test1);
+            }
+
+            if (alreadyCreated.indexOf(test2) === -1) {
+              linksToAdd.push([
+                idFn(nodesPath[nodesPath.length - 1]),
+                to
+              ]);
+              alreadyCreated.push(test2);
+            }
           }
         });
       });
     }
 
   }
-
 
   return {
     nodes: nodes.concat(nodesToAdd),

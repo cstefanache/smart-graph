@@ -71,12 +71,8 @@ export default function(instance) {
       const [width, length, height] = getSize(node);
       node.vx = (gridColumn.x - node.x + (gridColumn.width - width) / 2) * (1 - _);
       node.vy = (gridRow.y - node.y + (gridRow.width - length)) * (1 - _);
-
-      if (node.sgGroup) {
-        node.x += node.vx; // console.log(node);
-        node.y += node.vy;
-      }
-
+      node.x += node.vx;
+      node.y += node.vy;
     })
   }
 

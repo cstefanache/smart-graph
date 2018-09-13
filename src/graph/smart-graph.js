@@ -87,9 +87,7 @@ export default class SmartGraph {
         y: 0,
         vx: 0,
         vy: 0,
-        __sg: {
-
-        }
+        __sg: {}
       };
 
       const uid = uuid();
@@ -172,64 +170,87 @@ export default class SmartGraph {
   }
 
   toggle(node, collapseAll = true, runPlugins = true) {
-    const {__sg} = node;
-    const {children, collapsedChildren} = __sg;
-    const nodesList = [];
-    const linksList = [];
-    const revLinksList = [];
-    const nodeId = this.idFn(node);
-    const newNode = this.getNode({sgGroup: true, count: children.length});
-    const newNodeId = this.idFn(newNode);
 
-    const parseChildren = childsList => {
-      childsList.forEach(nd => {
-        if (nodesList.indexOf(nd) === -1) {
-          nodesList.push(nd);
-          if (!collapsedChildren) {
-            nd.__sg.blockRender = false;
-          }
-          nd.__sg.fromLinks.forEach(link => {
-            linksList.pushUnique(link);
-          });
+    if (node.collapseParent) {
+      this.toggle(node.collapseParent, collapseAll, runPlugins)
+    } else {
 
-          if (collapseAll) {
-            parseChildren(nd.__sg.children);
-          } else {
+      const {__sg} = node;
+      const {children, collapsedChildren} = __sg;
+      const nodesList = [];
+      const linksList = [];
+      const revLinksList = [];
+      const nodeId = this.idFn(node);
+      const newNode = this.getNode({sgGroup: true, count: children.length, collapseParent: node});
+      const newNodeId = this.idFn(newNode);
+      const alreadyCreated = [];
+      const parseChildren = childsList => {
+        childsList.forEach(nd => {
+          if (nodesList.indexOf(nd) === -1) {
+            nodesList.push(nd);
+            if (!collapsedChildren) {
+              nd.__sg.blockRender = false;
+            }
             nd.__sg.fromLinks.forEach(link => {
               linksList.pushUnique(link);
-              revLinksList.pushUnique([link[0], newNodeId]);
             });
-            nd.__sg.toLinks.forEach(link => {
-              linksList.pushUnique(link);
-              // revLinksList.pushUnique([nodeId, newNodeId]);
-              revLinksList.pushUnique([
-                newNodeId, link[1]
-              ]);
-            });
+
+            if (collapseAll) {
+              parseChildren(nd.__sg.children);
+            } else {
+              nd.__sg.fromLinks.forEach(link => {
+                linksList.pushUnique(link);
+                const id = `${link[0]}-${newNodeId}`;
+                if (alreadyCreated.indexOf(id) === -1) {
+                  revLinksList.pushUnique([link[0], newNodeId]);
+                  alreadyCreated.push(id);
+                }
+              });
+              nd.__sg.toLinks.forEach(link => {
+                linksList.pushUnique(link);
+                const id = `${newNodeId}-${link[1]}`;
+                if (alreadyCreated.indexOf(id) === -1) {
+                  revLinksList.pushUnique([
+                    newNodeId, link[1]
+                  ]);
+                  alreadyCreated.push(id)
+                }
+              });
+            }
           }
+        })
+      };
+
+      let executed = true;
+      if (!collapsedChildren) {
+        if (children.length > 1) {
+          parseChildren(children);
+          node.__sg.collapsedChildren = nodesList;
+          node.__sg.collapsedLinks = linksList;
+          node.__sg.createdLinks = revLinksList;
+          node.__sg.ghostNode = newNode;
+          this.nodes = lo.difference(this.nodes, nodesList);
+          if (!collapseAll) {
+            this.nodes.push(newNode);
+          }
+          this.links = lo.difference(this.links, linksList).concat(revLinksList);
+        } else {
+          executed = false;
         }
-      })
-    };
 
-    if (!collapsedChildren) {
-      parseChildren(children);
-      node.__sg.collapsedChildren = nodesList;
-      node.__sg.createdLinks = revLinksList;
-      node.__sg.ghostNode = newNode;
-      this.nodes = lo.difference(this.nodes, nodesList);
-      if (!collapseAll) {
-        this.nodes.push(newNode);
+      } else {
+        const {ghostNode} = node.__sg;
+        node.__sg.collapsedChildren.forEach(child => {
+          const {x, y, vx, vy} = ghostNode;
+          Object.assign(child, {x, y, vx, vy});
+        })
+        this.nodes = lo.without(this.nodes, ghostNode).concat(node.__sg.collapsedChildren);
+        this.links = lo.difference(this.links, node.__sg.createdLinks).concat(node.__sg.collapsedLinks);
+        delete node.__sg.collapsedChildren;
+        delete node.__sg.createdLinks;
+        delete node.__sg.collapsedLinks;
       }
-      this.links = lo.difference(this.links, linksList).concat(revLinksList);
-    } else {
-      parseChildren(collapsedChildren);
-      this.nodes = lo.without(this.nodes, node.__sg.ghostNode).concat(nodesList);
-      this.links = lo.difference(this.links, node.__sg.createdLinks).concat(linksList);
-      delete node.__sg.collapsedChildren;
-      delete node.__sg.revLinksList;
-    }
 
-    if (runPlugins) {
       this.runPlugins();
       this.restart();
     }
@@ -277,7 +298,7 @@ export default class SmartGraph {
     this.linksLayer.exit().remove();
     this.linksLayer = this.linksLayer.enter().append('path').attr('id', function(d) {
       return `${d[0]}-${d[1]}`
-    }).attr('class', 'link').attr('stroke', '#808080').attr('fill', 'transparent').attr('stroke-width', 1).merge(this.linksLayer);
+    }).attr('class', 'link').attr('stroke', 'rgb(64,64,64)').attr('fill', 'transparent').attr('stroke-width', 1).merge(this.linksLayer);
 
     this.restartSimulation();
   }
