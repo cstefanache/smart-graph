@@ -30,6 +30,9 @@ const processors = {
 }
 
 const DEFAULTS = {
+  link: {
+    color: 'rgb(125,125,125)'
+  },
   locationFn: (x, y, z = 0) => [
     x, y - z
   ],
@@ -298,7 +301,7 @@ export default class SmartGraph {
     this.linksLayer.exit().remove();
     this.linksLayer = this.linksLayer.enter().append('path').attr('id', function(d) {
       return `${d[0]}-${d[1]}`
-    }).attr('class', 'link').attr('stroke', 'rgb(64,64,64)').attr('fill', 'transparent').attr('stroke-width', 1).merge(this.linksLayer);
+    }).attr('class', 'link').attr('stroke', this.config.link.color).attr('fill', 'transparent').attr('stroke-width', 1).merge(this.linksLayer);
 
     this.restartSimulation();
   }

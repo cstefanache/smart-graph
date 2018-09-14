@@ -1,6 +1,6 @@
 import lo from 'lodash';
 
-export default function (instance) {
+export default function(instance) {
 
   const {nodes, links, nodesMap} = instance;
   const tree = {};
@@ -28,10 +28,12 @@ export default function (instance) {
       const [from, to] = link;
       const fromNode = nodesMap[from],
         toNode = nodesMap[to];
-      fromNode.__sg.children.pushUnique(toNode);
-      fromNode.__sg.toLinks.pushUnique(link)
-      toNode.__sg.fromLinks.pushUnique(link);
-      toNode.__sg.row = fromNode.__sg.row + 1;
+      if (fromNode && toNode) {
+        fromNode.__sg.children.pushUnique(toNode);
+        fromNode.__sg.toLinks.pushUnique(link)
+        toNode.__sg.fromLinks.pushUnique(link);
+        toNode.__sg.row = fromNode.__sg.row + 1;
+      }
     }
   }
 
@@ -47,6 +49,13 @@ export default function (instance) {
     }
     treeRow.children.push(node);
     layout.numCols = Math.max(layout.numCols, treeRow.children.length);
+  });
+
+  Object.keys(tree).forEach((key, index) => {
+    const row = tree[key];
+    delete tree[key];
+    tree[index] = row;
+    row.children.forEach(node => node.__sg.row = index);
   });
 
   layout.numRows = Object.keys(tree).length;
