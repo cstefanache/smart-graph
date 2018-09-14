@@ -187,6 +187,7 @@ export default class SmartGraph {
       const newNode = this.getNode({sgGroup: true, count: children.length, collapseParent: node});
       const newNodeId = this.idFn(newNode);
       const alreadyCreated = [];
+      const shouldCollapseAll = collapseAll || children.length === 1;
       const parseChildren = childsList => {
         childsList.forEach(nd => {
           if (nodesList.indexOf(nd) === -1) {
@@ -198,7 +199,7 @@ export default class SmartGraph {
               linksList.pushUnique(link);
             });
 
-            if (collapseAll) {
+            if (shouldCollapseAll) {
               parseChildren(nd.__sg.children);
             } else {
               nd.__sg.fromLinks.forEach(link => {
@@ -224,9 +225,7 @@ export default class SmartGraph {
         })
       };
 
-      let executed = true;
       if (!collapsedChildren) {
-        if (children.length > 1) {
           parseChildren(children);
           node.__sg.collapsedChildren = nodesList;
           node.__sg.collapsedLinks = linksList;
@@ -237,9 +236,6 @@ export default class SmartGraph {
             this.nodes.push(newNode);
           }
           this.links = lo.difference(this.links, linksList).concat(revLinksList);
-        } else {
-          executed = false;
-        }
 
       } else {
         const {ghostNode} = node.__sg;

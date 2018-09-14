@@ -101,26 +101,29 @@ export default function(instance) {
         result.push({dataKey, median, num});
       }
     });
-    result = lo.sortBy(result, item => item.median * item.num);
+    result = lo.sortBy(result, item => item.num + 1 / item.median);
 
-    let iter = 0;
     let prevNum = Number.MAX_SAFE_INTEGER;
     let prevMedian = 0;
-    for (iter; iter < Math.min(result.length, 4); iter++) {
+
+    const relevantFeatures = [];
+
+    console.log(result);
+
+    for (let iter = 0; iter < result.length; iter++) {
 
       const {dataKey, num, median} = result[iter];
-      console.log(dataKey, num, prevNum, median, prevMedian);
+      // console.log(dataKey, num, prevNum, median, prevMedian);
 
-      if (prevNum <= num && prevMedian >= median ) {
-        break;
+      if (num !== prevNum && median !== prevMedian && relevantFeatures.length < 5 && num < 6) {
+        relevantFeatures.push(result[iter]);
+        prevNum = num;
+        prevMedian = median;
       }
-      prevNum = num;
-      prevMedian = median;
+
     }
 
-    console.log('----------------------');
-
-    result.length = iter;
+    result = relevantFeatures;
     const routes = {};
 
     const getRouteForPath = path => {

@@ -1,13 +1,21 @@
 import lo from 'lodash';
-
+const DEFAULTS = {
+  agressiveDemoting: false
+}
 export default function(instance) {
 
-  const {nodes, links, nodesMap} = instance;
+  const {nodes, links, nodesMap, config} = instance;
   const tree = {};
   const layout = {
     numCols: 0,
     numRows: 0
   };
+
+  const cfg = {
+    ...DEFAULTS,
+    ...config.tree
+  }
+  console.log(cfg);
 
   const orderedNodes = [];
 
@@ -32,7 +40,16 @@ export default function(instance) {
         fromNode.__sg.children.pushUnique(toNode);
         fromNode.__sg.toLinks.pushUnique(link)
         toNode.__sg.fromLinks.pushUnique(link);
-        toNode.__sg.row = fromNode.__sg.row + 1;
+        if (!cfg.agressiveDemoting || toNode.__sg.row <= fromNode.__sg.row) {
+          toNode.__sg.row = fromNode.__sg.row + 1;
+        }
+      } else {
+        if (!fromNode) {
+          console.warn(`Missing node ${from}`)
+        }
+        if (!toNode) {
+          console.warn(`Missing node ${to}`)
+        }
       }
     }
   }

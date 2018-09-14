@@ -9,6 +9,6 @@ import example4Run from './example4';
 // example2Run();
 // example3Run();
 // example3IQRun();
-example3IQRun();
-// example3IQFlatRun();
+// example3IQRun();
+example3IQFlatRun();
 // example4Run();
