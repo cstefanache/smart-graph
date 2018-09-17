@@ -18,7 +18,8 @@ export default class Cylinder extends D3Element {
       a: 1
     }, model);
 
-    const pos = Util.iso([model.x, model.y, model.z]), {r, g, b, alpha} = model;
+    const pos = Util.iso([model.x, model.y, model.z]);
+    // , {r, g, b, alpha} = model;
     this.root.append('ellipse').attr('cx', pos[0]).attr('cy', pos[1]).attr('rx', model.radius * 1.1).attr('ry', model.radius * 0.7).attr('fill', `rgba(0, 0, 0, 0.2)`).attr('style', 'filter:url("#blur")');
     this.root.append('ellipse').attr('cx', pos[0]).attr('cy', pos[1]).attr('rx', model.radius).attr('ry', model.radius * 0.6).attr('fill', rgb(model.r, model.g, model.b));
     this.root.append('ellipse').attr('cx', pos[0]).attr('cy', pos[1]).attr('rx', model.radius).attr('ry', model.radius * 0.6).style('fill', 'url(#gradient)');
@@ -28,7 +29,7 @@ export default class Cylinder extends D3Element {
 
   }
 
-  animate(model, duration = 200, delay = 0) {
+  animate() {
 
     /*
     return new Promise(resolve => {

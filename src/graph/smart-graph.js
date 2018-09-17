@@ -11,7 +11,7 @@ import Utils from '../common/utils';
 import lo from 'lodash';
 import panZoom from './layers/panzoom.layer';
 import {select} from 'd3-selection';
-import treeFn from './tree.fn';
+import treeFn from './tree.layout.fn';
 import uuid from 'uuid4';
 
 const DEFAULTS = {

@@ -17,9 +17,8 @@ export default class Block extends D3Element {
       height,
       width
     } = this;
-
-    const fb = Util.iso(x - width, y, z),
-      mlb = Util.iso(x + width, y, z),
+    // fb = Util.iso(x - width, y, z),
+    const mlb = Util.iso(x + width, y, z),
       nb = Util.iso(x + width, y + length, z),
       mrb = Util.iso(x, y + length, z),
       ft = Util.iso(x, y, z + height),
