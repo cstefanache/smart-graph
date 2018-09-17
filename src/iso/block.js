@@ -107,8 +107,7 @@ export default class Block extends D3Element {
       Object.assign(this, model);
 
       const {r, g, b, a} = this;
-      const color = Util.isoColor(r, g, b, a)
-      console.log(color);
+      const color = Util.isoColor(r, g, b, a);
       const iso = this.getFaces(),
         execute = () => {
           Object.keys(iso).forEach(key => {

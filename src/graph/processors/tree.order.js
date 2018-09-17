@@ -21,7 +21,6 @@ export default function (instance) {
     })
   }
 
-  console.log(orderedNodes);
   const keys = Object.keys(tree);
 
   if (keys.length > 0) {

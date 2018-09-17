@@ -25,8 +25,6 @@ export default function (parent, instance) {
         return;
       } // nothing to fit
 
-      console.log(fullWidth, width);
-
       const scale = (paddingPercent || 0.75) / Math.max(width / fullWidth, height / fullHeight);
       parent.call(panZoom).transition().duration(duration).call(panZoom.transform, zoomIdentity.translate(fullWidth / 2 - scale * midX, fullHeight / 2 - scale * midY).scale(scale));
       // parent.call(panZoom).transition().duration(duration).call(panZoom.transform, zoomIdentity.translate(fullWidth / 2 - scale * midX, fullHeight / 2 - scale * midY));

@@ -1,5 +1,5 @@
 /* eslint no-extend-native: 0 */
-Array.prototype.pushUnique = function(item) {
+Array.prototype.pushUnique = function (item) {
   if (this.indexOf(item) === -1) {
     this.push(item);
   }
@@ -8,26 +8,11 @@ Array.prototype.pushUnique = function(item) {
 import {forceCenter, forceLink, forceManyBody, forceSimulation} from 'd3-force';
 
 import Utils from '../common/utils';
-import childrenAggregator from './processors/children.aggregator';
-import groupBuilder from './processors/group.builder';
 import lo from 'lodash';
-import nodesMapper from './processors/node.mapper';
 import panZoom from './layers/panzoom.layer';
-import processGraph from './processors/tree.builder';
 import {select} from 'd3-selection';
 import treeFn from './tree.fn';
-import treeOrder from './processors/tree.order';
-import autoCollapse from './processors/auto.collapse';
 import uuid from 'uuid4';
-
-const processors = {
-  nodesMapper,
-  processGraph,
-  childrenAggregator,
-  groupBuilder,
-  treeOrder,
-  autoCollapse
-}
 
 const DEFAULTS = {
   link: {
@@ -36,18 +21,7 @@ const DEFAULTS = {
   locationFn: (x, y, z = 0) => [
     x, y - z
   ],
-  processors: [
-    'nodesMapper',
-    'processGraph',
-    'childrenAggregator',
-    'groupBuilder',
-    'nodesMapper',
-    'processGraph',
-    'autoCollapse',
-    'nodesMapper',
-    'processGraph',
-    'treeOrder'
-  ],
+
   layers: [panZoom],
   getAnchor: (node, out) => {
     const {width, length} = node.__sg;
@@ -95,7 +69,7 @@ export default class SmartGraph {
 
       const uid = uuid();
       if (isFunction) {
-        node.id = function() {
+        node.id = function () {
           return uid
         };
       } else {
@@ -107,6 +81,7 @@ export default class SmartGraph {
     this.listeners = {};
 
     this.treeFn = treeFn(config);
+    this.config.processors = this.treeFn.processors;
 
     if (config.locationFn === 'iso') {
       this.config.locationFn = Utils.revIso;
@@ -226,16 +201,16 @@ export default class SmartGraph {
       };
 
       if (!collapsedChildren) {
-          parseChildren(children);
-          node.__sg.collapsedChildren = nodesList;
-          node.__sg.collapsedLinks = linksList;
-          node.__sg.createdLinks = revLinksList;
-          node.__sg.ghostNode = newNode;
-          this.nodes = lo.difference(this.nodes, nodesList);
-          if (!collapseAll) {
-            this.nodes.push(newNode);
-          }
-          this.links = lo.difference(this.links, linksList).concat(revLinksList);
+        parseChildren(children);
+        node.__sg.collapsedChildren = nodesList;
+        node.__sg.collapsedLinks = linksList;
+        node.__sg.createdLinks = revLinksList;
+        node.__sg.ghostNode = newNode;
+        this.nodes = lo.difference(this.nodes, nodesList);
+        if (!collapseAll) {
+          this.nodes.push(newNode);
+        }
+        this.links = lo.difference(this.links, linksList).concat(revLinksList);
 
       } else {
         const {ghostNode} = node.__sg;
@@ -264,12 +239,9 @@ export default class SmartGraph {
   }
 
   runPlugins() {
-    this.config.processors.forEach(processorName => {
-      const processor = processors[processorName];
+    this.config.processors.forEach(processor => {
       if (processor) {
         Object.assign(this, processor(this))
-      } else {
-        throw new Error(`Processor ${processorName} does not exist or it was not initialized`);
       }
     });
 
@@ -283,19 +255,19 @@ export default class SmartGraph {
     this.nodesLayer.exit().remove();
     this.nodesLayer = this.nodesLayer.enter().append('g').attr('class', 'node').merge(this.nodesLayer);
 
-    this.nodesLayer.nodes().forEach(function(d, i) {
+    this.nodesLayer.nodes().forEach(function (d, i) {
       const node = nodes[i];
       if (!node.__sg.blockRender) {
         node.iso = config.render(select(d), node);
         node.__sg.blockRender = true;
       }
     });
-    this.linksLayer = this.linksLayer.data(links, function(d) {
+    this.linksLayer = this.linksLayer.data(links, function (d) {
       return `${d[0]}-${d[1]}`
     });
 
     this.linksLayer.exit().remove();
-    this.linksLayer = this.linksLayer.enter().append('path').attr('id', function(d) {
+    this.linksLayer = this.linksLayer.enter().append('path').attr('id', function (d) {
       return `${d[0]}-${d[1]}`
     }).attr('class', 'link').attr('stroke', this.config.link.color).attr('fill', 'transparent').attr('stroke-width', 1).merge(this.linksLayer);
 

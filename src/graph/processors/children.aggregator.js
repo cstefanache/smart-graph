@@ -45,9 +45,6 @@ export default function (instance) {
         }
       })
     })
-
-    console.log(values);
-
   });
 
   return {nodes, links};

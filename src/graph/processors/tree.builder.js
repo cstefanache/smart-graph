@@ -2,7 +2,7 @@ import lo from 'lodash';
 const DEFAULTS = {
   agressiveDemoting: false
 }
-export default function(instance) {
+export default function (instance) {
 
   const {nodes, links, nodesMap, config} = instance;
   const tree = {};
@@ -15,8 +15,6 @@ export default function(instance) {
     ...DEFAULTS,
     ...config.tree
   }
-  console.log(cfg);
-
   const orderedNodes = [];
 
   nodes.forEach(node => {

@@ -17,7 +17,7 @@ const DEFAULTS = {
 
 let executed = false;
 
-export default function(instance) {
+export default function (instance) {
   const {
     nodes,
     links,
@@ -107,8 +107,6 @@ export default function(instance) {
     let prevMedian = 0;
 
     const relevantFeatures = [];
-
-    console.log(result);
 
     for (let iter = 0; iter < result.length; iter++) {
 

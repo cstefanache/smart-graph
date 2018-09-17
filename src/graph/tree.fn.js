@@ -1,4 +1,32 @@
+import autoCollapse from './processors/auto.collapse';
+import childrenAggregator from './processors/children.aggregator';
+import groupBuilder from './processors/group.builder';
 import lo from 'lodash';
+import nodesMapper from './processors/node.mapper';
+import processGraph from './processors/tree.builder';
+import treeOrder from './processors/tree.order';
+
+export const processors = {
+  nodesMapper,
+  processGraph,
+  childrenAggregator,
+  groupBuilder,
+  treeOrder,
+  autoCollapse
+}
+
+export const processorExecution = [
+  'nodesMapper',
+  'processGraph',
+  'childrenAggregator',
+  'groupBuilder',
+  'nodesMapper',
+  'processGraph',
+  'autoCollapse',
+  'nodesMapper',
+  'processGraph',
+  'treeOrder'
+]
 
 const OFFSET = 50;
 const DEFAULTS = {
@@ -15,7 +43,6 @@ class Grid {
   }
 
   setNodes(nodes, conf) {
-    console.log(this.config);
     const {layout, tree, config} = conf, {getSize} = config, {numCols, numRows} = layout,
       rows = [],
       cols = [];
@@ -60,7 +87,7 @@ class Grid {
   }
 }
 
-export default function(instance) {
+export default function (instance) {
   let nodes,
     links,
     grid = new Grid(instance);
@@ -76,15 +103,17 @@ export default function(instance) {
     })
   }
 
-  force.setNodes = function(n, data) {
+  force.setNodes = function (n, data) {
     nodes = n;
     grid.setNodes(nodes, data);
   }
 
-  force.setLinks = function(l, data) {
+  force.setLinks = function (l, data) {
     links = l;
     grid.setNodes(nodes, data);
   }
+
+  force.processors = processorExecution.reduce((memo, item) => memo.concat(processors[item]), []);
 
   return force;
 }
