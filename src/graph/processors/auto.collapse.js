@@ -4,19 +4,27 @@ let executed = false;
 
 const DEFAULT = {
   minNumToCollapse: 5,
-  collapseAll: false
+  collapseAll: false,
+  execute: false
 }
 
 export default function(instance) {
 
-  const {nodes, links, idFn, getNode, config} = instance;
+  const {
+    nodes,
+    links,
+    idFn,
+    getNode,
+    config,
+    toggle
+  } = instance;
 
   const cfg = {
     ...DEFAULT,
     ...config.autoCollapse
   }
 
-  if (executed) {
+  if (executed || !cfg.execute) {
     return {}
   }
 
@@ -25,6 +33,7 @@ export default function(instance) {
 
   const alreadyCreated = [];
 
+  /*
   const toggle = node => {
     const {__sg} = node;
     const {children} = __sg;
@@ -75,17 +84,24 @@ export default function(instance) {
     updatedNodes.push(newNode);
     updatedLinks = lo.difference(updatedLinks, linksList).concat(revLinksList);
   }
+  */
+
   nodes.forEach(node => {
     if (node.sgAutoGroup || cfg.collapseAll) {
       const {length} = node.__sg.children;
 
       if (length > cfg.minNumToCollapse) {
-        toggle(node);
+        toggle.apply(instance, [
+          node, {
+            runPlugins: false,
+            restart: false
+          }
+        ]);
       }
     }
   });
 
   executed = true;
-  return {nodes: updatedNodes, links: updatedLinks};
+  return {};
 
 }

@@ -2,7 +2,6 @@ import {Block, SmartGraph} from '../src';
 
 import props from './data/example2.data.json';
 
-
 let nextProps = {
   nodes: [],
   links: []
@@ -26,7 +25,6 @@ props.links.forEach(link => {
   nextProps.links.push([`us-${from}`, `us-${to}`]);
   nextProps.links.push([`eu-${from}`, `eu-${to}`]);
 })
-
 
 const svg = document.querySelector('#svg');
 

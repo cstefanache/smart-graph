@@ -1,5 +1,5 @@
 /* eslint no-extend-native: 0 */
-Array.prototype.pushUnique = function (item) {
+Array.prototype.pushUnique = function(item) {
   if (this.indexOf(item) === -1) {
     this.push(item);
   }
@@ -12,6 +12,7 @@ import lo from 'lodash';
 import panZoom from './layers/panzoom.layer';
 import {select} from 'd3-selection';
 import treeFn from './tree.layout.fn';
+import commFn from './comm.layout.fn';
 import uuid from 'uuid4';
 
 const DEFAULTS = {
@@ -46,6 +47,19 @@ export default class SmartGraph {
       ...config
     };
 
+    this.root = select(svgRoot);
+
+    const defs = this.root.append('defs');
+    defs.append('filter').attr('id', 'blur').append('feGaussianBlur').attr('in', 'SourceGraphic').attr('stdDeviation', 1.2);
+    const gradient = defs.append('linearGradient').attr('id', 'gradient').attr('x1', '0%').attr('y1', '0%').attr('x2', '100%').attr('y2', '0%').attr('spreadMethod', 'pad');
+    gradient.append('stop').attr('offset', '0%').attr('stop-color', '#000').attr('stop-opacity', 0.4);
+    gradient.append('stop').attr('offset', '80%').attr('stop-color', '#000').attr('stop-opacity', 0.2);
+    gradient.append('stop').attr('offset', '100%').attr('stop-color', '#000').attr('stop-opacity', 0.2);
+    const marker = defs.append('marker');
+    marker.attr('id', 'link').attr('viewBox', '0 -5 10 10').attr('refX', 5).attr('refY', 0).attr('markerWidth', 4).attr('markerHeight', 4).attr('orient', 'auto')
+
+    marker.append('path').attr('d', 'M0,-5L10,0L0,5').attr('class', 'arrowHead');
+
     const {id} = this.config;
 
     if (!id) {
@@ -69,7 +83,7 @@ export default class SmartGraph {
 
       const uid = uuid();
       if (isFunction) {
-        node.id = function () {
+        node.id = () => {
           return uid
         };
       } else {
@@ -121,8 +135,7 @@ export default class SmartGraph {
             if (!toNode) {
               return 'M0,0';
             }
-            // const [fx, fy] = this.config.locationFn(fromNode.x, fromNode.y, fromNode.z);
-            // const [tx, ty] = this.config.locationFn(toNode.x, toNode.y, toNode.z);
+            // const [fx, fy] = this.config.locationFn(fromNode.x, fromNode.y, fromNode.z); const [tx, ty] = this.config.locationFn(toNode.x, toNode.y, toNode.z);
             const [fromX, fromY, fromZ] = this.config.getAnchor(fromNode, true);
             const [toX, toY, toZ] = this.config.getAnchor(toNode, false);
             const [fx, fy] = this.config.locationFn(fromX, fromY, fromZ);
@@ -147,29 +160,44 @@ export default class SmartGraph {
     this.listeners[event] = fn;
   }
 
-  toggle(node, collapseAll = true, runPlugins = true) {
+  toggle(node, config) {
+    const cfg = {
+      collapseAll: false,
+      runPlugins: true,
+      restart: true,
+      ...config
+    }
 
-    if (node.collapseParent) {
-      this.toggle(node.collapseParent, collapseAll, runPlugins)
+    const {__sg} = node;
+    const {children, collapsedChildren} = __sg;
+    const shouldCollapseAll = cfg.collapseAll || children.length === 1;
+
+    if (collapsedChildren) {
+      node.__sg.blockRender = false;
+      node.__sg.collapsedChildren.forEach(nd => {
+        nd.x = node.x;
+        nd.y = node.y;
+        nd.vx = node.vx;
+        nd.vy = node.vy;
+      });
+      this.nodes = this.nodes.concat(node.__sg.collapsedChildren);
+      this.links = lo.difference(this.links, node.__sg.createdLinks).concat(node.__sg.collapsedLinks);
+      delete node.__sg.collapsedChildren;
+      delete node.__sg.createdLinks;
+      delete node.__sg.collapsedLinks;
     } else {
-
-      const {__sg} = node;
-      const {children, collapsedChildren} = __sg;
       const nodesList = [];
       const linksList = [];
       const revLinksList = [];
-      const nodeId = this.idFn(node);
-      const newNode = this.getNode({sgGroup: true, count: children.length, collapseParent: node});
-      const newNodeId = this.idFn(newNode);
       const alreadyCreated = [];
-      const shouldCollapseAll = collapseAll || children.length === 1;
+      const nodeId = this.idFn(node);
+      node.__sg.blockRender = false;
+
       const parseChildren = childsList => {
         childsList.forEach(nd => {
           if (nodesList.indexOf(nd) === -1) {
             nodesList.push(nd);
-            if (!collapsedChildren) {
-              nd.__sg.blockRender = false;
-            }
+            nd.__sg.blockRender = false;
             nd.__sg.fromLinks.forEach(link => {
               linksList.pushUnique(link);
             });
@@ -179,55 +207,38 @@ export default class SmartGraph {
             } else {
               nd.__sg.fromLinks.forEach(link => {
                 linksList.pushUnique(link);
-                const id = `${link[0]}-${newNodeId}`;
-                if (alreadyCreated.indexOf(id) === -1) {
-                  revLinksList.pushUnique([link[0], newNodeId]);
-                  alreadyCreated.push(id);
-                }
               });
               nd.__sg.toLinks.forEach(link => {
                 linksList.pushUnique(link);
-                const id = `${newNodeId}-${link[1]}`;
+                const id = `${nodeId}-${link[1]}`;
                 if (alreadyCreated.indexOf(id) === -1) {
                   revLinksList.pushUnique([
-                    newNodeId, link[1]
+                    nodeId, link[1]
                   ]);
                   alreadyCreated.push(id)
                 }
               });
             }
           }
-        })
+        });
       };
 
-      if (!collapsedChildren) {
-        parseChildren(children);
-        node.__sg.collapsedChildren = nodesList;
-        node.__sg.collapsedLinks = linksList;
-        node.__sg.createdLinks = revLinksList;
-        node.__sg.ghostNode = newNode;
-        this.nodes = lo.difference(this.nodes, nodesList);
-        if (!collapseAll) {
-          this.nodes.push(newNode);
-        }
-        this.links = lo.difference(this.links, linksList).concat(revLinksList);
+      parseChildren(children);
+      node.__sg.collapsedChildren = nodesList;
+      node.__sg.collapsedLinks = linksList;
+      node.__sg.createdLinks = revLinksList;
+      this.nodes = lo.difference(this.nodes, nodesList);
+      this.links = lo.difference(this.links, linksList).concat(revLinksList);
+    }
 
-      } else {
-        const {ghostNode} = node.__sg;
-        node.__sg.collapsedChildren.forEach(child => {
-          const {x, y, vx, vy} = ghostNode;
-          Object.assign(child, {x, y, vx, vy});
-        })
-        this.nodes = lo.without(this.nodes, ghostNode).concat(node.__sg.collapsedChildren);
-        this.links = lo.difference(this.links, node.__sg.createdLinks).concat(node.__sg.collapsedLinks);
-        delete node.__sg.collapsedChildren;
-        delete node.__sg.createdLinks;
-        delete node.__sg.collapsedLinks;
-      }
-
+    if (cfg.runPlugins) {
       this.runPlugins();
+    }
+
+    if (cfg.restart) {
       this.restart();
     }
+
   }
 
   setData(data) {
@@ -255,21 +266,23 @@ export default class SmartGraph {
     this.nodesLayer.exit().remove();
     this.nodesLayer = this.nodesLayer.enter().append('g').attr('class', 'node').merge(this.nodesLayer);
 
-    this.nodesLayer.nodes().forEach(function (d, i) {
+    this.nodesLayer.nodes().forEach(function(d, i) {
       const node = nodes[i];
       if (!node.__sg.blockRender) {
-        node.iso = config.render(select(d), node);
+        const root = select(d);
+        root.html('');
+        node.iso = config.render(root, node);
         node.__sg.blockRender = true;
       }
     });
-    this.linksLayer = this.linksLayer.data(links, function (d) {
+    this.linksLayer = this.linksLayer.data(links, function(d) {
       return `${d[0]}-${d[1]}`
     });
 
     this.linksLayer.exit().remove();
-    this.linksLayer = this.linksLayer.enter().append('path').attr('id', function (d) {
+    this.linksLayer = this.linksLayer.enter().append('path').attr('id', function(d) {
       return `${d[0]}-${d[1]}`
-    }).attr('class', 'link').attr('stroke', this.config.link.color).attr('fill', 'transparent').attr('stroke-width', 1).merge(this.linksLayer);
+    }).attr('class', 'link').attr('marker-end', 'url(#link)').attr('stroke', this.config.link.color).attr('fill', 'transparent').attr('stroke-width', 1).merge(this.linksLayer);
 
     this.restartSimulation();
   }

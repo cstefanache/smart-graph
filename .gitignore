@@ -5,8 +5,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 *.iq.json
-*.iq.js
-
+*.iq*
+*.DS_Store
+.zip
 # Runtime data
 pids
 *.pid

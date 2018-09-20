@@ -1,7 +1,6 @@
 import D3Element from './d3element';
 import Util from '../common/utils';
 import {rgb} from 'd3-color';
-
 export default class Cylinder extends D3Element {
 
   build(model) {
@@ -15,17 +14,20 @@ export default class Cylinder extends D3Element {
       r: 125,
       g: 125,
       b: 125,
-      a: 1
+      a: 1,
+      shadow: true
     }, model);
 
-    const pos = Util.iso([model.x, model.y, model.z]);
-    // , {r, g, b, alpha} = model;
-    this.root.append('ellipse').attr('cx', pos[0]).attr('cy', pos[1]).attr('rx', model.radius * 1.1).attr('ry', model.radius * 0.7).attr('fill', `rgba(0, 0, 0, 0.2)`).attr('style', 'filter:url("#blur")');
-    this.root.append('ellipse').attr('cx', pos[0]).attr('cy', pos[1]).attr('rx', model.radius).attr('ry', model.radius * 0.6).attr('fill', rgb(model.r, model.g, model.b));
+    const pos = Util.iso(model.x, model.y, model.z);
+    const {r, g, b, alpha} = this;
+    if (this.shadow) {
+      this.root.append('ellipse').attr('cx', pos[0]).attr('cy', pos[1]).attr('rx', model.radius * 1.1).attr('ry', model.radius * 0.7).attr('fill', `rgba(${r / 2},${g / 2}, ${b / 2}, 0.6)`).attr('style', 'filter:url("#blur")');
+    }
+    this.root.append('ellipse').attr('cx', pos[0]).attr('cy', pos[1]).attr('rx', model.radius).attr('ry', model.radius * 0.6).attr('fill', rgb(r, g, b));
     this.root.append('ellipse').attr('cx', pos[0]).attr('cy', pos[1]).attr('rx', model.radius).attr('ry', model.radius * 0.6).style('fill', 'url(#gradient)');
-    this.root.append('rect').attr('x', pos[0] - model.radius).attr('y', pos[1] - model.height).attr('width', model.radius * 2).attr('height', model.height).attr('fill', rgb(model.r, model.g, model.b));
+    this.root.append('rect').attr('x', pos[0] - model.radius).attr('y', pos[1] - model.height).attr('width', model.radius * 2).attr('height', model.height).attr('fill', rgb(r, g, b));
     this.root.append('rect').attr('x', pos[0] - model.radius).attr('y', pos[1] - model.height).attr('width', model.radius * 2).attr('height', model.height).style('fill', 'url(#gradient)');
-    this.root.append('ellipse').attr('cx', pos[0]).attr('cy', pos[1] - model.height).attr('rx', model.radius).attr('ry', model.radius * 0.6).attr('fill', rgb(model.r, model.g, model.b));
+    this.root.append('ellipse').attr('cx', pos[0]).attr('cy', pos[1] - model.height).attr('rx', model.radius).attr('ry', model.radius * 0.6).attr('fill', rgb(r, g, b));
 
   }
 
