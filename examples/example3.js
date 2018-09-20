@@ -1,12 +1,13 @@
 import {Block, SmartGraph} from '../src';
 
-import props from './data/example2.data.json';
+import props from './data/ex.iq.json';
 
 const svg = document.querySelector('#svg');
 let clickFn;
 const config = {
   render: (svgRoot, node) => {
     let root = new Block(svgRoot);
+    console.log(node);
     root.build({
       x: 0,
       y: -20,
@@ -16,8 +17,8 @@ const config = {
       height: 4,
       radius: 20,
       a: 0.9,
-      r: node.r || 155,
-      g: node.g || 155,
+      r: node.r || node.sgGroup ? 255 : 155,
+      g: node.g || node.sgAutoGroup ? 255 : 155,
       b: node.b || 155
     });
     svgRoot.on('click', d => {
@@ -26,7 +27,7 @@ const config = {
     })
     return root;
   },
-  locationFn: 'iso',
+  // locationFn: 'iso',
   getSize: node => [
     20, 20, 4
   ],
