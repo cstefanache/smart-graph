@@ -47,6 +47,6 @@ export default function (instance) {
     }
   }
 
-  return {nodes: lo.sortBy(nodes, node => node.__sg.toNodes.length), links, layout, tree};
+  return {nodes: lo.sortBy(nodes, node => node.__sg.fromNodes.length), links, layout, tree};
 
 }

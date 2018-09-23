@@ -16,8 +16,11 @@ import commFn from './comm.layout.fn';
 import uuid from 'uuid4';
 
 const DEFAULTS = {
+  debugging: false,
   link: {
-    color: 'rgb(125,125,125)'
+    curved: true,
+    color: 'rgb(125,125,125)',
+    layerFirst: false
   },
   locationFn: (x, y, z = 0) => [
     x, y - z
@@ -94,7 +97,7 @@ export default class SmartGraph {
 
     this.listeners = {};
 
-    this.treeFn = treeFn(config);
+    this.treeFn = commFn(config);
     this.config.processors = this.treeFn.processors;
 
     if (config.locationFn === 'iso') {
@@ -107,8 +110,13 @@ export default class SmartGraph {
       parent = layer(parent, this);
     })
 
-    this.linksLayer = parent.append('g').attr('class', 'links').selectAll('.link');
-    this.nodesLayer = parent.append('g').attr('class', 'nodes').selectAll('.nodes');
+    if (this.config.link.layerFirst) {
+      this.nodesLayer = parent.append('g').attr('class', 'nodes').selectAll('.nodes');
+      this.linksLayer = parent.append('g').attr('class', 'links').selectAll('.link');
+    } else {
+      this.linksLayer = parent.append('g').attr('class', 'links').selectAll('.link');
+      this.nodesLayer = parent.append('g').attr('class', 'nodes').selectAll('.nodes');
+    }
 
     this.restartSimulation = Utils.debounce(() => {
 
@@ -135,14 +143,22 @@ export default class SmartGraph {
             if (!toNode) {
               return 'M0,0';
             }
-            // const [fx, fy] = this.config.locationFn(fromNode.x, fromNode.y, fromNode.z); const [tx, ty] = this.config.locationFn(toNode.x, toNode.y, toNode.z);
+
             const [fromX, fromY, fromZ] = this.config.getAnchor(fromNode, true);
             const [toX, toY, toZ] = this.config.getAnchor(toNode, false);
-            const [fx, fy] = this.config.locationFn(fromX, fromY, fromZ);
-            const [cfx, cfy] = this.config.locationFn(fromX, fromY + 30, fromZ);
-            const [tx, ty] = this.config.locationFn(toX, toY, toZ);
-            const [ctx, cty] = this.config.locationFn(toX, toY - 30, toZ);
-            return `M${fx},${fy} C${cfx},${cfy} ${ctx},${cty}  ${tx},${ty}`;
+
+            if (this.config.link.curved) {
+              // const [fx, fy] = this.config.locationFn(fromNode.x, fromNode.y, fromNode.z); const [tx, ty] = this.config.locationFn(toNode.x, toNode.y, toNode.z);
+              const [fx, fy] = this.config.locationFn(fromX, fromY, fromZ);
+              const [cfx, cfy] = this.config.locationFn(fromX, fromY + 30, fromZ);
+              const [tx, ty] = this.config.locationFn(toX, toY, toZ);
+              const [ctx, cty] = this.config.locationFn(toX, toY - 30, toZ);
+              return `M${fx},${fy} C${cfx},${cfy} ${ctx},${cty}  ${tx},${ty}`;
+            } else {
+              const [fx, fy] = this.config.locationFn(fromX, fromY, fromZ);
+              const [tx, ty] = this.config.locationFn(toX, toY, toZ);
+              return `M${fx},${fy}  ${tx},${ty}`;
+            }
 
           });
         });
@@ -238,7 +254,39 @@ export default class SmartGraph {
     if (cfg.restart) {
       this.restart();
     }
+  }
 
+  updateFeatures(obj, cfg) {
+    const config = {
+      runPlugins: true,
+      restart: true,
+      ...cfg
+    };
+    const {addNodes, addLinks, removeNodes, removeLinks} = obj;
+
+    if (addNodes) {
+      this.nodes = this.nodes.concat(addNodes);
+    }
+
+    if (addLinks) {
+      this.links = this.links.concat(addLinks);
+    }
+
+    if (removeNodes) {
+      this.nodes = lo.difference(this.nodes, removeNodes);
+    }
+
+    if (removeLinks) {
+      this.links = lo.difference(this.links, removeLinks);
+    }
+
+    if (config.runPlugins) {
+      this.runPlugins();
+    }
+
+    if (config.restart) {
+      this.restart();
+    }
   }
 
   setData(data) {
@@ -275,7 +323,7 @@ export default class SmartGraph {
         node.__sg.blockRender = true;
       }
     });
-    this.linksLayer = this.linksLayer.data(links, function(d) {
+    this.linksLayer = this.linksLayer.data(links, d => {
       return `${d[0]}-${d[1]}`
     });
 
