@@ -2,12 +2,12 @@ import autoCollapse from './auto.collapse';
 import childrenAggregator from './children.aggregator';
 import defaultProcessor from './default.processor';
 import groupBuilder from './group.builder';
+import layerGroup from './layer.group.processor';
+import linksReducer from './links.reducer';
 import nodesMapper from './node.mapper';
 import processGraph from './tree.builder';
-import treeOrder from './tree.order';
 import relationship from './relationship.builder';
-import linksReducer from './links.reducer';
-
+import treeOrder from './tree.order';
 
 export default {
     autoCollapse,
@@ -18,5 +18,6 @@ export default {
     processGraph,
     treeOrder,
     relationship,
-    linksReducer
+    linksReducer,
+    layerGroup
 }

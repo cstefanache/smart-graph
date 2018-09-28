@@ -39,10 +39,10 @@ export default function (instance) {
       toNode.__sg.fromLinks.pushUnique(link);
     } else {
       if (!fromNode) {
-        console.warn(`Missing node ${from}`)
+        // console.warn(`Missing node ${from}`)
       }
       if (!toNode) {
-        console.warn(`Missing node ${to}`)
+        // console.warn(`Missing node ${to}`)
       }
     }
   }

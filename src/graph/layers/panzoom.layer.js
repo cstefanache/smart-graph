@@ -4,8 +4,14 @@ import {zoom, zoomIdentity} from 'd3-zoom';
 export default function (parent, instance) {
   const root = parent.append('g');
 
+  const {config} = instance;
+  const {onZoom} = config;
   const panZoom = zoom().on('zoom', () => {
+    root.transform = event.transform;
     root.attr('transform', event.transform);
+    if (onZoom) {
+      onZoom(event.transform);
+    }
   });
 
   instance.zoomToExtent = (paddingPercent = 0.8, duration = 300, delay = 0) => new Promise(resolve => {
@@ -29,6 +35,7 @@ export default function (parent, instance) {
       parent.call(panZoom).transition().duration(duration).call(panZoom.transform, zoomIdentity.translate(fullWidth / 2 - scale * midX, fullHeight / 2 - scale * midY).scale(scale));
       // parent.call(panZoom).transition().duration(duration).call(panZoom.transform, zoomIdentity.translate(fullWidth / 2 - scale * midX, fullHeight / 2 - scale * midY));
       setTimeout(() => {
+
         resolve(this);
       }, duration)
     }, delay);

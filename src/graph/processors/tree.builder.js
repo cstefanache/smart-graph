@@ -43,10 +43,10 @@ export default function (instance) {
         }
       } else {
         if (!fromNode) {
-          console.warn(`Missing node ${from}`)
+          // console.warn(`Missing node ${from}`)
         }
         if (!toNode) {
-          console.warn(`Missing node ${to}`)
+          // console.warn(`Missing node ${to}`)
         }
       }
     }
@@ -73,6 +73,7 @@ export default function (instance) {
     row.children.forEach(node => node.__sg.row = index);
   });
 
+  console.log(tree);
   layout.numRows = Object.keys(tree).length;
   return {nodes, links, layout, tree};
 

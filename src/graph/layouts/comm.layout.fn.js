@@ -1,12 +1,12 @@
 import lo from 'lodash';
-import processors from './processors';
+import processors from '../processors';
 
 export const processorExecution = ['defaultProcessor', 'nodesMapper', 'relationship', 'linksReducer']
 
-let nodeSize = 50;
-let padding = 10;
+let nodeSize = 20 * 1.8;
+let padding = 40;
 
-export default function(instance) {
+export default function (instance) {
   let nodes,
     links,
     inst,
@@ -23,7 +23,7 @@ export default function(instance) {
     let cAngle = 0;
     let currentX = 0;
     let currentY = 0;
-    let groupRadi = {};
+    let latestSize;
     let angle = 0;
     let pos = 0;
     nodes.forEach(node => {
@@ -57,21 +57,30 @@ export default function(instance) {
 
       const groupLayering = () => {
         const {groupIndex, positionInGroup, groupRef} = __sg;
-        const maxNodesAtRadius = Math.min(radius * Math.PI / (nodeSize + padding), groupRef.length);
-
+        if (groupIndex === 3) {
+          // debugger
+        }
+        if (cGx !== groupIndex) {
+          radius += nodeSize + padding;
+          latestSize = groupRef.length;
+          cGx = groupIndex;
+          pos = 1;
+          angle = 0;
+        }
+        const maxNodesAtRadius = Math.floor(Math.min(radius * Math.PI / (nodeSize + padding), latestSize - 1));
+        // const maxNodesAtRadius = Math.floor(radius * Math.PI / (nodeSize + padding));
         node.vx = (radius * Math.cos(angle) - node.x) * (1 - _);
         node.vy = (radius * Math.sin(angle) - node.y) * (1 - _);
         angle = pos / (maxNodesAtRadius || 1) * Math.PI;
-        pos++;
-        if (cGx !== groupIndex || pos > maxNodesAtRadius) {
-          radius += (nodeSize + padding) * (
-            cGx !== groupIndex
-            ? 2
-            : 1);
-          cGx = groupIndex;
+
+        if (pos > maxNodesAtRadius) {
+          radius += nodeSize + padding;
+          latestSize -= maxNodesAtRadius;
           pos = 0;
           angle = 0;
         }
+
+        pos++;
       }
 
       groupLayering();
@@ -82,11 +91,11 @@ export default function(instance) {
     })
   }
 
-  force.setNodes = function(n, data) {
+  force.setNodes = function (n, data) {
     nodes = n;
   }
 
-  force.setLinks = function(l, data) {
+  force.setLinks = function (l, data) {
     links = l;
   }
 

@@ -1,5 +1,5 @@
 /* eslint no-extend-native: 0 */
-Array.prototype.pushUnique = function(item) {
+Array.prototype.pushUnique = function (item) {
   if (this.indexOf(item) === -1) {
     this.push(item);
   }
@@ -8,15 +8,15 @@ Array.prototype.pushUnique = function(item) {
 import {forceCenter, forceLink, forceManyBody, forceSimulation} from 'd3-force';
 
 import Utils from '../common/utils';
+import layouts from './layouts';
 import lo from 'lodash';
 import panZoom from './layers/panzoom.layer';
 import {select} from 'd3-selection';
-import treeFn from './tree.layout.fn';
-import commFn from './comm.layout.fn';
 import uuid from 'uuid4';
 
 const DEFAULTS = {
   debugging: false,
+  layout: 'treeFn',
   link: {
     curved: true,
     color: 'rgb(125,125,125)',
@@ -47,17 +47,24 @@ export default class SmartGraph {
   constructor(svgRoot, config) {
     this.config = {
       ...DEFAULTS,
-      ...config
+      ...config,
+      link: {
+        ...DEFAULTS.link,
+        ...config.link
+      }
     };
 
     this.root = select(svgRoot);
 
     const defs = this.root.append('defs');
+    this.fixedPreLayer = this.root.append('g');
+    this.fixedPreLayer.attr('class', 'sg-fixed-pre');
     defs.append('filter').attr('id', 'blur').append('feGaussianBlur').attr('in', 'SourceGraphic').attr('stdDeviation', 1.2);
     const gradient = defs.append('linearGradient').attr('id', 'gradient').attr('x1', '0%').attr('y1', '0%').attr('x2', '100%').attr('y2', '0%').attr('spreadMethod', 'pad');
     gradient.append('stop').attr('offset', '0%').attr('stop-color', '#000').attr('stop-opacity', 0.4);
     gradient.append('stop').attr('offset', '80%').attr('stop-color', '#000').attr('stop-opacity', 0.2);
     gradient.append('stop').attr('offset', '100%').attr('stop-color', '#000').attr('stop-opacity', 0.2);
+
     const marker = defs.append('marker');
     marker.attr('id', 'link').attr('viewBox', '0 -5 10 10').attr('refX', 5).attr('refY', 0).attr('markerWidth', 4).attr('markerHeight', 4).attr('orient', 'auto')
 
@@ -86,9 +93,7 @@ export default class SmartGraph {
 
       const uid = uuid();
       if (isFunction) {
-        node.id = () => {
-          return uid
-        };
+        node.id = () => uid;
       } else {
         node[id] = uid
       }
@@ -96,8 +101,7 @@ export default class SmartGraph {
     }
 
     this.listeners = {};
-
-    this.treeFn = commFn(config);
+    this.treeFn = layouts[this.config.layout](config);
     this.config.processors = this.treeFn.processors;
 
     if (config.locationFn === 'iso') {
@@ -105,10 +109,13 @@ export default class SmartGraph {
     }
 
     let parent = select(svgRoot);
-
+    this.layers = [];
     this.config.layers.forEach(layer => {
       parent = layer(parent, this);
+      this.layers.push(parent);
     })
+
+    this.preLayer = parent.append('g').attr('class', 'sg-pre');
 
     if (this.config.link.layerFirst) {
       this.nodesLayer = parent.append('g').attr('class', 'nodes').selectAll('.nodes');
@@ -118,12 +125,17 @@ export default class SmartGraph {
       this.nodesLayer = parent.append('g').attr('class', 'nodes').selectAll('.nodes');
     }
 
+    this.postLayer = parent.append('g').attr('class', 'sg-post');
+
     this.restartSimulation = Utils.debounce(() => {
 
       if (!this.simulation) {
         this.simulation = forceSimulation().force('treeFn', this.treeFn).nodes(this.nodes);
         this.simulation.nodes(this.nodes).on('tick', () => {
-          // let alpha = this.simulation.alpha();
+          const alpha = this.simulation.alpha();
+          if (this.config.renderFN) {
+            this.config.renderFN(this, alpha);
+          }
           this.nodesLayer.attr('transform', (d, index) => {
             const [x, y] = this.config.locationFn(d.x, d.y, d.z);
             if (isNaN(x)) {
@@ -190,14 +202,19 @@ export default class SmartGraph {
 
     if (collapsedChildren) {
       node.__sg.blockRender = false;
+      let syntheticLinks = [];
       node.__sg.collapsedChildren.forEach(nd => {
         nd.x = node.x;
         nd.y = node.y;
         nd.vx = node.vx;
         nd.vy = node.vy;
+        if (nd.__sg.syntheticLinks) {
+          syntheticLinks = syntheticLinks.concat(nd.__sg.syntheticLinks);
+        }
       });
       this.nodes = this.nodes.concat(node.__sg.collapsedChildren);
       this.links = lo.difference(this.links, node.__sg.createdLinks).concat(node.__sg.collapsedLinks);
+      this.links = lo.difference(this.links, syntheticLinks);
       delete node.__sg.collapsedChildren;
       delete node.__sg.createdLinks;
       delete node.__sg.collapsedLinks;
@@ -254,6 +271,8 @@ export default class SmartGraph {
     if (cfg.restart) {
       this.restart();
     }
+
+    console.log(this);
   }
 
   updateFeatures(obj, cfg) {
@@ -306,6 +325,15 @@ export default class SmartGraph {
 
   }
 
+  removeNode(node) {
+    const {nodes, links, idFn} = this;
+    const toId = idFn(node);
+    console.log(this.nodes.length, nodes.indexOf(node));
+    this.nodes.splice(nodes.indexOf(node), 1);
+    console.log(this.nodes.length);
+    //  this.links = lo.difference(this.links, node.__sg.createdLinks)
+  }
+
   restart() {
     const {nodes, links, config} = this;
     this.treeFn.setNodes(nodes, this);
@@ -314,7 +342,7 @@ export default class SmartGraph {
     this.nodesLayer.exit().remove();
     this.nodesLayer = this.nodesLayer.enter().append('g').attr('class', 'node').merge(this.nodesLayer);
 
-    this.nodesLayer.nodes().forEach(function(d, i) {
+    this.nodesLayer.nodes().forEach(function (d, i) {
       const node = nodes[i];
       if (!node.__sg.blockRender) {
         const root = select(d);
@@ -323,12 +351,10 @@ export default class SmartGraph {
         node.__sg.blockRender = true;
       }
     });
-    this.linksLayer = this.linksLayer.data(links, d => {
-      return `${d[0]}-${d[1]}`
-    });
+    this.linksLayer = this.linksLayer.data(links, d => `${d[0]}-${d[1]}`);
 
     this.linksLayer.exit().remove();
-    this.linksLayer = this.linksLayer.enter().append('path').attr('id', function(d) {
+    this.linksLayer = this.linksLayer.enter().append('path').attr('id', function (d) {
       return `${d[0]}-${d[1]}`
     }).attr('class', 'link').attr('marker-end', 'url(#link)').attr('stroke', this.config.link.color).attr('fill', 'transparent').attr('stroke-width', 1).merge(this.linksLayer);
 

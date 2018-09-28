@@ -1,10 +1,11 @@
-import processors from './processors';
+import processors from '../processors';
 
 export const processorExecution = [
   'nodesMapper',
   'processGraph',
   'childrenAggregator',
   'groupBuilder',
+  'layerGroup',
   'nodesMapper',
   'processGraph',
   'autoCollapse',
@@ -72,7 +73,7 @@ class Grid {
   }
 }
 
-export default function(instance) {
+export default function (instance) {
   let nodes,
     links,
     grid = new Grid(instance);
@@ -83,17 +84,17 @@ export default function(instance) {
       const [width, length, height] = getSize(node);
       node.vx = (gridColumn.x - node.x + (gridColumn.width - width) / 2) * (1 - _);
       node.vy = (gridRow.y - node.y + (gridRow.width - length)) * (1 - _);
-      node.x += node.vx;
-      node.y += node.vy;
+       node.x += node.vx;
+       node.y += node.vy;
     })
   }
 
-  force.setNodes = function(n, data) {
+  force.setNodes = function (n, data) {
     nodes = n;
     grid.setNodes(nodes, data);
   }
 
-  force.setLinks = function(l, data) {
+  force.setLinks = function (l, data) {
     links = l;
     grid.setNodes(nodes, data);
   }

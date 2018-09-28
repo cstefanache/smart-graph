@@ -1,11 +1,11 @@
 import lo from 'lodash';
 
 const DEFAULTS = {
-  layers: 12
+  layers: 8
 }
 let executed = false;
 
-export default function(instance) {
+export default function (instance) {
 
   if (executed) {
     return
@@ -52,11 +52,11 @@ export default function(instance) {
     __sg.groupRef = group.group;
     group.group.push(node);
   });
-  console.log(groups);
   executed = true;
   return {
     nodes: lo.sortBy(nodes, node => node.__sg.groupIndex * 1e5 + node.__sg.positionInGroup),
-    links: filteredLinks
+    links: filteredLinks,
+    relGroups: groups
   };
 
 }
