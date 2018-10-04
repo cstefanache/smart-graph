@@ -11,28 +11,26 @@ const config = {
   updateNode: (root, node, alpha) => {
     const {__sg, x, y} = node;
 
-    const {
-      hyperSize,
-      childrenRadius,
-      circle,
-      circle2,
-      mx,
-      my
-    } = __sg;
+    const {hyperSize, circle, circle2, bounds} = __sg;
+    const sizeX = (bounds.minX + bounds.maxX) / 2;
+    const sizeY = (bounds.minY + bounds.maxY) / 2
+    const cx = sizeX - x;
+    const cy = sizeY - y;
+    const r = Math.abs(sizeX);
     circle.attrs({
-      cx: mx,
-      cy: my,
-      r: [0, 1, 6].indexOf(node.oid) !== -1
-        ? hyperSize
-        : 2
+      cx,
+      cy,
+      r: [10].indexOf(node.oid) !== -1
+        ? r
+        : 0
     });
 
     circle2.attrs({
       cx: 0,
       cy: 0,
-      r: [0, 1, 6].indexOf(node.oid) !== -1
-        ? hyperSize - 10
-        : 2
+      r: [1, 6].indexOf(node.oid) !== -1
+        ? 3
+        : 0
     });
   },
   render: (svgRoot, node) => {

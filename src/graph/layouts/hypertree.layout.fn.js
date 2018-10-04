@@ -51,9 +51,13 @@ export default function (instance) {
       let angle = pAngle + Math.PI / 2.5;
 
       children.forEach(node => {
+        node.__sg.bounds = {
+          minX: node.x,
+          maxX: node.x,
+          minY: node.y,
+          maxY: node.y
+        };
         if (node.visited !== visited) {
-          node.cx = cx;
-          node.cy = cy;
           node.visited = visited;
           const dx = cx + (radius * Math.cos(angle) - node.x);
           const dy = cy + (radius * Math.sin(angle) - node.y);
@@ -62,23 +66,17 @@ export default function (instance) {
           const lAngle = angle;
           angle += 2 * Math.PI / length;
           const nodeChilds = node.__sg.children;
-
+          const centerX = cx + radius * Math.cos(lAngle);
+          const centerY = cy + radius * Math.sin(lAngle)
           if (nodeChilds && nodeChilds.length > 0) {
-            const childrenRadius = positionChildrenAroundCenter(cx + radius * Math.cos(lAngle), cy + radius * Math.sin(lAngle), nodeChilds, lAngle);
-            let init = true;
+            positionChildrenAroundCenter(centerX, centerY, nodeChilds, lAngle);
             nodeChilds.forEach(nd => {
-              if (init) {
-                init = false;
-                node.__sg.mx = nd.cx;
-                node.__sg.my = nd.cy;
-              } else {
-                node.__sg.mx = (node.__sg.mx + nd.cx) / 2;
-                node.__sg.my = (node.__sg.my + nd.cx) / 2;
-              }
-            });
-          } else {
-            node.__sg.mx = node.cx;
-            node.__sg.my = node.cy;
+              node.__sg.bounds.minX = node.__sg.bounds.minX ? Math.min(node.__sg.bounds.minX, nd.__sg.bounds.minX) : nd.__sg.bounds.minX;
+              node.__sg.bounds.minY = node.__sg.bounds.minY ? Math.min(node.__sg.bounds.minY, nd.__sg.bounds.minY) : nd.__sg.bounds.minY;
+
+              node.__sg.bounds.maxX = node.__sg.bounds.maxX ? Math.max(node.__sg.bounds.maxX, nd.__sg.bounds.maxX) : nd.__sg.bounds.maxX;
+              node.__sg.bounds.maxY = node.__sg.bounds.maxY ? Math.max(node.__sg.bounds.maxY, nd.__sg.bounds.maxY) : nd.__sg.bounds.maxY;
+            })
           }
         }
       });
