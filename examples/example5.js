@@ -9,15 +9,39 @@ const config = {
     curved: false
   },
   updateNode: (root, node, alpha) => {
-    const {__sg} = node;
-    const {hyperSize, circle} = __sg;
+    const {__sg, x, y} = node;
+
+    const {
+      hyperSize,
+      childrenRadius,
+      circle,
+      circle2,
+      mx,
+      my
+    } = __sg;
     circle.attrs({
-      r: Math.round(hyperSize) * (1 - alpha)
-    })
+      cx: mx,
+      cy: my,
+      r: [0, 1, 6].indexOf(node.oid) !== -1
+        ? hyperSize
+        : 2
+    });
+
+    circle2.attrs({
+      cx: 0,
+      cy: 0,
+      r: [0, 1, 6].indexOf(node.oid) !== -1
+        ? hyperSize - 10
+        : 2
+    });
   },
   render: (svgRoot, node) => {
     let g = svgRoot.append('g');
-    console.log(node);
+
+    svgRoot.on('mouseenter', d => {
+      console.log(node);
+    });
+
     const {__sg} = node;
     const {hyperSize} = __sg;
     g.append('circle').attrs({
@@ -30,12 +54,21 @@ const config = {
     });
 
     __sg.circle = g.append('circle');
+    __sg.circle2 = g.append('circle');
     __sg.circle.attrs({
       cx: 0,
       cy: 0,
       r: 6,
       fill: 'none',
       stroke: 'rgba(0,0,0, .2)',
+      'stroke-width': 1
+    });
+    __sg.circle2.attrs({
+      cx: 0,
+      cy: 0,
+      r: 6,
+      fill: 'none',
+      stroke: 'rgba(250,120,0, .2)',
       'stroke-width': 1
     });
     return g;
