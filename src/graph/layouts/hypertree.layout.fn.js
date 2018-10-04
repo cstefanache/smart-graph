@@ -34,27 +34,20 @@ export default function (instance) {
       const {__sg} = node;
       const {children} = __sg;
       const [w, h] = getSize(node);
-      // if (!__sg.hyperSize) {
+      if (!__sg.hyperSize) {
         __sg.hyperSize = Math.sqrt(w * w + h * h);
-        if (children && children.length > 0) {
+        if (children && children.length > 1) {
           __sg.hyperSize = children.reduce((memo, child) => memo + calculateNodeSize(child), 0)
         }
-      // }
+      }
 
       return __sg.hyperSize;
     }
     const visited = Math.random();
     const positionChildrenAroundCenter = (cx, cy, children, pAngle = 0) => {
-      const {length} = children;
-      const circleLength = (
-        length === 1
-        ? 100
-        : 0) + children.reduce((memo, item) => memo + calculateNodeSize(item), 0);
+      const circleLength = children.reduce((memo, item) => memo + calculateNodeSize(item), 0);
       const radius = circleLength / Math.PI * 2;
-      let angle = pAngle + (
-        length > 1
-        ? Math.PI / 2
-        : 0);
+      let angle = pAngle;
       children.forEach(node => {
         if (node.visited !== visited) {
           node.visited = visited;

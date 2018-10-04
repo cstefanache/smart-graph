@@ -30,10 +30,10 @@ const DEFAULTS = {
   getAnchor: (node, out) => {
     const {width, length} = node.__sg;
     return [
-      node.x + width / 2,
+      node.x + (width || 2) / 2,
       node.y + (
         out
-        ? length
+        ? length || 2
         : 0),
       0,
       0
@@ -128,7 +128,8 @@ export default class SmartGraph {
     this.postLayer = parent.append('g').attr('class', 'sg-post');
 
     this.restartSimulation = Utils.debounce(() => {
-
+      const {updateNode} = config;
+      const nodesLayerNodes = this.nodesLayer.nodes();
       if (!this.simulation) {
         this.simulation = forceSimulation().force('treeFn', this.treeFn).nodes(this.nodes);
         this.simulation.nodes(this.nodes).on('tick', () => {
@@ -137,6 +138,9 @@ export default class SmartGraph {
             this.config.renderFN(this, alpha);
           }
           this.nodesLayer.attr('transform', (d, index) => {
+            if (updateNode) {
+              updateNode(nodesLayerNodes[index], d, alpha);
+            }
             const [x, y] = this.config.locationFn(d.x, d.y, d.z);
             if (isNaN(x)) {
               return `translate(0, 0)`;
@@ -158,7 +162,6 @@ export default class SmartGraph {
 
             const [fromX, fromY, fromZ] = this.config.getAnchor(fromNode, true);
             const [toX, toY, toZ] = this.config.getAnchor(toNode, false);
-
             if (this.config.link.curved) {
               // const [fx, fy] = this.config.locationFn(fromNode.x, fromNode.y, fromNode.z); const [tx, ty] = this.config.locationFn(toNode.x, toNode.y, toNode.z);
               const [fx, fy] = this.config.locationFn(fromX, fromY, fromZ);

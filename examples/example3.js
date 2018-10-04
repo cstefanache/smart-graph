@@ -1,6 +1,6 @@
 import {Block, SmartGraph} from '../src';
 
-import props from './data/ex.iq.json';
+import props from './data/example2.data.json';
 
 const svg = document.querySelector('#svg');
 let clickFn;
