@@ -48,7 +48,7 @@ export default function (instance) {
       const {length} = children;
       const circleLength = children.reduce((memo, item) => memo + calculateNodeSize(item), 0);
       const radius = circleLength / Math.PI * 2;
-      let angle = pAngle + Math.PI / 2.5;
+      let angle = pAngle + Math.PI / length;
 
       children.forEach(node => {
         node.__sg.bounds = {
@@ -73,7 +73,6 @@ export default function (instance) {
             nodeChilds.forEach(nd => {
               node.__sg.bounds.minX = node.__sg.bounds.minX ? Math.min(node.__sg.bounds.minX, nd.__sg.bounds.minX) : nd.__sg.bounds.minX;
               node.__sg.bounds.minY = node.__sg.bounds.minY ? Math.min(node.__sg.bounds.minY, nd.__sg.bounds.minY) : nd.__sg.bounds.minY;
-
               node.__sg.bounds.maxX = node.__sg.bounds.maxX ? Math.max(node.__sg.bounds.maxX, nd.__sg.bounds.maxX) : nd.__sg.bounds.maxX;
               node.__sg.bounds.maxY = node.__sg.bounds.maxY ? Math.max(node.__sg.bounds.maxY, nd.__sg.bounds.maxY) : nd.__sg.bounds.maxY;
             })

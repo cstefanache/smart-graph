@@ -16,14 +16,13 @@ const config = {
     const sizeY = (bounds.minY + bounds.maxY) / 2
     const cx = sizeX - x;
     const cy = sizeY - y;
-    const r = Math.abs(sizeX);
-    circle.attrs({
-      cx,
-      cy,
-      r: [10].indexOf(node.oid) !== -1
-        ? r
-        : 0
-    });
+    const dx = bounds.maxX - sizeX;
+    const dy = bounds.maxY - sizeY;
+    const r = Math.sqrt(dx * dx + dy * dy);
+
+    circle.attrs({cx, cy, r: [1, 10, 6].indexOf(node.oid) !== -1
+      ? r
+      : 0});
 
     circle2.attrs({
       cx: 0,
@@ -74,15 +73,16 @@ const config = {
   layout: 'hypertreeFn',
   // locationFn: 'iso',
   getSize: node => node.isCollapsed
-    ? [10, 10, 10]
+    ? [20, 20, 20]
     : [
-      10, 10, 10
+      20, 20, 20
     ],
   id: 'oid'
 }
 
 export default() => {
   const graph = new SmartGraph(svg, config);
+  window.graph = graph;
   graph.setData(props);
   graph.zoomToExtent(0.8, 300, 500)
 }
