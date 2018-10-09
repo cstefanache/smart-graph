@@ -170,9 +170,15 @@ export default class SmartGraph {
               const [ctx, cty] = this.config.locationFn(toX, toY - 30, toZ);
               return `M${fx},${fy} C${cfx},${cfy} ${ctx},${cty}  ${tx},${ty}`;
             } else {
-              const [fx, fy] = this.config.locationFn(fromX, fromY, fromZ);
-              const [tx, ty] = this.config.locationFn(toX, toY, toZ);
-              return `M${fx},${fy}  ${tx},${ty}`;
+              if (this.config.link.fn) {
+                const [fx, fy, tx, ty] = this.config.link.fn({fromNode, toNode, fromX, fromY, fromZ, toX, toY, toZ});
+                return `M${fx},${fy}  ${tx},${ty}`;
+              } else {
+
+                const [fx, fy] = this.config.locationFn(fromX, fromY, fromZ);
+                const [tx, ty] = this.config.locationFn(toX, toY, toZ);
+                return `M${fx},${fy}  ${tx},${ty}`;
+              }
             }
 
           });
