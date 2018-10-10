@@ -8,7 +8,8 @@ export default function (instance) {
       ...node.__sg,
       width,
       length,
-      height
+      height,
+      hyperSize: undefined
     };
   });
 

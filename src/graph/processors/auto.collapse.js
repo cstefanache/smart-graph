@@ -24,7 +24,7 @@ export default function (instance) {
     ...config.autoCollapse
   }
 
-  if (executed || !cfg.active) {
+  if (executed || !cfg.execute) {
     return {}
   }
 
@@ -34,10 +34,11 @@ export default function (instance) {
   const alreadyCreated = [];
 
   nodes.forEach(node => {
-    if (node.sgAutoGroup || node.forceGroup || cfg.collapseAll) {
+    const orCond = cfg.or && cfg.or(node);
+    if (node.sgAutoGroup || node.forceGroup || cfg.collapseAll || orCond) {
       const {length} = node.__sg.children;
 
-      if (length > cfg.minNumToCollapse || node.forceGroup) {
+      if (length > cfg.minNumToCollapse || node.forceGroup || orCond) {
         toggle.apply(instance, [
           node, {
             collapseAll: true,

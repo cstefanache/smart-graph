@@ -269,10 +269,12 @@ export default class SmartGraph {
       node.__sg.collapsedChildren = nodesList;
       node.__sg.collapsedLinks = linksList;
       node.__sg.createdLinks = revLinksList;
+
       this.nodes = lo.difference(this.nodes, nodesList);
       this.links = lo.difference(this.links, linksList).concat(revLinksList);
     }
 
+    node.__sg.isCollapsed = !collapsedChildren;
     if (cfg.runPlugins) {
       this.runPlugins();
     }
@@ -281,7 +283,6 @@ export default class SmartGraph {
       this.restart();
     }
 
-    console.log(this);
   }
 
   updateFeatures(obj, cfg) {
@@ -326,11 +327,20 @@ export default class SmartGraph {
   }
 
   runPlugins() {
+    const {onBeforePlugins, onAfterPlugins} = this.config;
+
+    if (onBeforePlugins) {
+      onBeforePlugins(this);
+    }
     this.config.processors.forEach(processor => {
       if (processor) {
         Object.assign(this, processor(this))
       }
     });
+
+    if (onAfterPlugins) {
+      onAfterPlugins(this);
+    }
 
   }
 

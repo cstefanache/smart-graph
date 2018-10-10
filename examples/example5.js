@@ -18,14 +18,15 @@ const config = {
         toY,
         toZ
       } = data;
-      const fr = fromNode.r;
-      const tr = toNode.r;
-      if (toNode.oid === 14) {
-        debugger;
-      }
+      const fr = fromNode.weighted.r;
+      const tr = toNode.weighted.r;
+      // if (toNode.oid === 14) {
+      //   debugger;
+      // }
       return [
-        fromX, fromY, toX + Math.sign(fromX - toX) * tr,
-        toY + Math.sign(fromY - toY) * tr
+        fromX, fromY,
+        toX + Math.sign(Math.ceil(fromX) - Math.ceil(toX)) * tr,
+        toY + Math.sign(Math.ceil(fromY) - Math.ceil(toY)) * tr
       ];
     }
   },
@@ -40,22 +41,20 @@ const config = {
     const dx = bounds.maxX - sizeX;
     const dy = bounds.maxY - sizeY;
     const r = Math.sqrt(dx * dx + dy * dy);
-    node.r = r;
+    node.weighted = {
+      cx, cy, r
+    }
 
     circle.attrs({
       cx,
       cy,
-      r: [1, 10, 6].indexOf(node.oid) !== -1
-        ? r
-        : r
+      r
     });
 
     circle2.attrs({
       cx: 0,
       cy: 0,
-      r: [1, 6].indexOf(node.oid) !== -1
-        ? 3
-        : 0
+      r
     });
   },
   render: (svgRoot, node) => {
@@ -75,7 +74,7 @@ const config = {
       cx: 0,
       cy: 0,
       r: 5,
-      fill: 'none',
+      fill: 'rgba(125,0,0,.2)',
       stroke: 'rgb(255,120,120)',
       'stroke-width': 1
     });
@@ -95,14 +94,15 @@ const config = {
     return g;
   },
   layout: 'hypertreeFn',
+  layerGroup: {
+    active: true,
+    breakLinks: true,
+    props: [null, null, 'model']
+  },
   // locationFn: 'iso',
   getSize: node => node.isCollapsed
     ? [20, 20, 20]
-    : [
-      node.r || 15,
-      node.r || 15,
-      node.r || 15
-    ],
+    : [10, 10, 10],
   id: 'oid'
 }
 

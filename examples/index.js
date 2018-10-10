@@ -1,4 +1,4 @@
-// import demo from './demo/sample2.iq';
+import demo from './demo.iq/it.universe';
 import example0Run from './example0';
 import example1Run from './example1';
 import example2Run from './example2';
@@ -14,6 +14,6 @@ import example5Run from './example5';
 // example3IQRun();
 // example3IconsRun();
 // example3IQFlatRun();
-example5Run();
+// example5Run();
 
-// demo();
+demo();

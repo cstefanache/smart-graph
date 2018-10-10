@@ -1,6 +1,7 @@
 import processors from '../processors';
 
 export const processorExecution = [
+  'defaultProcessor',
   'nodesMapper',
   'processGraph',
   'childrenAggregator',
@@ -14,41 +15,30 @@ export const processorExecution = [
   'treeOrder'
 ]
 
-let nodeSize = 20;
-let padding = 10;
-let logged = false;
 export default function (instance) {
   let nodes,
     links,
     tree;
   const {getSize} = instance;
   function force(_) {
-    const log = what => {
-      if (!logged) {
-        console.log(what);
-      }
-    }
+    const visited = Math.random();
 
-    log('------------------------');
     const calculateNodeSize = node => {
       const {__sg} = node;
       const {children} = __sg;
       const [w, h] = getSize(node);
       if (!__sg.hyperSize) {
-        __sg.hyperSize = Math.sqrt(w * w + h * h);
-        if (children && children.length > 1) {
-          __sg.hyperSize = children.reduce((memo, child) => memo + calculateNodeSize(child), __sg.hyperSize)
-        }
+        __sg.hyperSize = Math.sqrt(w * w + h * h) + children.reduce((memo, child) => memo + calculateNodeSize(child), 0);
       }
 
       return __sg.hyperSize;
     }
-    const visited = Math.random();
-    const positionChildrenAroundCenter = (cx, cy, children, pAngle = 0) => {
+
+    const positionChildrenAroundCenter = (cx, cy, children, pAngle = 0, pRadi = 0) => {
       const {length} = children;
       const circleLength = children.reduce((memo, item) => memo + calculateNodeSize(item), 0);
-      const radius = circleLength / Math.PI * 2;
-      let angle = pAngle + Math.PI / length;
+      const radius = pRadi + circleLength / Math.PI * 2;
+      let angle = pAngle + Math.PI / 4 / length;
 
       children.forEach(node => {
         node.__sg.bounds = {
@@ -59,22 +49,31 @@ export default function (instance) {
         };
         if (node.visited !== visited) {
           node.visited = visited;
-          const dx = cx + (radius * Math.cos(angle) - node.x);
-          const dy = cy + (radius * Math.sin(angle) - node.y);
+          let radi = pRadi + node.__sg.hyperSize * 2;
+          const dx = cx + (radi * Math.cos(angle) - node.x);
+          const dy = cy + (radi * Math.sin(angle) - node.y);
           node.vx = dx * (1 - _);
           node.vy = dy * (1 - _);
           const lAngle = angle;
           angle += 2 * Math.PI / length;
           const nodeChilds = node.__sg.children;
-          const centerX = cx + radius * Math.cos(lAngle);
-          const centerY = cy + radius * Math.sin(lAngle)
+          const centerX = cx + radi * Math.cos(lAngle);
+          const centerY = cy + radi * Math.sin(lAngle)
           if (nodeChilds && nodeChilds.length > 0) {
-            positionChildrenAroundCenter(centerX, centerY, nodeChilds, lAngle);
+            positionChildrenAroundCenter(centerX, centerY, nodeChilds, lAngle, node.__sg.hyperSize);
             nodeChilds.forEach(nd => {
-              node.__sg.bounds.minX = node.__sg.bounds.minX ? Math.min(node.__sg.bounds.minX, nd.__sg.bounds.minX) : nd.__sg.bounds.minX;
-              node.__sg.bounds.minY = node.__sg.bounds.minY ? Math.min(node.__sg.bounds.minY, nd.__sg.bounds.minY) : nd.__sg.bounds.minY;
-              node.__sg.bounds.maxX = node.__sg.bounds.maxX ? Math.max(node.__sg.bounds.maxX, nd.__sg.bounds.maxX) : nd.__sg.bounds.maxX;
-              node.__sg.bounds.maxY = node.__sg.bounds.maxY ? Math.max(node.__sg.bounds.maxY, nd.__sg.bounds.maxY) : nd.__sg.bounds.maxY;
+              node.__sg.bounds.minX = node.__sg.bounds.minX
+                ? Math.min(node.__sg.bounds.minX, nd.__sg.bounds.minX)
+                : nd.__sg.bounds.minX;
+              node.__sg.bounds.minY = node.__sg.bounds.minY
+                ? Math.min(node.__sg.bounds.minY, nd.__sg.bounds.minY)
+                : nd.__sg.bounds.minY;
+              node.__sg.bounds.maxX = node.__sg.bounds.maxX
+                ? Math.max(node.__sg.bounds.maxX, nd.__sg.bounds.maxX)
+                : nd.__sg.bounds.maxX;
+              node.__sg.bounds.maxY = node.__sg.bounds.maxY
+                ? Math.max(node.__sg.bounds.maxY, nd.__sg.bounds.maxY)
+                : nd.__sg.bounds.maxY;
             })
           }
         }
@@ -84,9 +83,6 @@ export default function (instance) {
     }
 
     positionChildrenAroundCenter(0, 0, tree[0].children);
-    log(tree);
-    logged = true;
-
   }
 
   force.setNodes = function (n, data) {
